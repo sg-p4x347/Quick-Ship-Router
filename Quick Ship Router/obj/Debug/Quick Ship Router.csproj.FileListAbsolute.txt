@@ -1,0 +1,14 @@
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.exe.config
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.exe
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.pdb
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick_Ship_Router.Form1.resources
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick_Ship_Router.Properties.Resources.resources
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.csproj.GenerateResource.Cache
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.exe
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.pdb
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.csproj.ResolveComReference.cache
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.exe.manifest
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.exe.manifest
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.application
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.application
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.csprojResolveAssemblyReference.cache

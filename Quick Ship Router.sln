@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Quick Ship Router", "Quick Ship Router\Quick Ship Router.csproj", "{C091C0F2-7B9C-421F-99B6-6E97B74850CB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2F8FAFAC-62C7-4FB0-BEF5-A679B67F78E5}"
+	ProjectSection(SolutionItems) = preProject
+		Quick Ship Router\bin\Debug\currentID.txt = Quick Ship Router\bin\Debug\currentID.txt
+		Quick Ship Router\Kanban Blank Color Cross Reference.xlsx = Quick Ship Router\Kanban Blank Color Cross Reference.xlsx
+		Quick Ship Router\printed.txt = Quick Ship Router\printed.txt
+		Quick Ship Router\router.xlsx = Quick Ship Router\router.xlsx
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C091C0F2-7B9C-421F-99B6-6E97B74850CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C091C0F2-7B9C-421F-99B6-6E97B74850CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C091C0F2-7B9C-421F-99B6-6E97B74850CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C091C0F2-7B9C-421F-99B6-6E97B74850CB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

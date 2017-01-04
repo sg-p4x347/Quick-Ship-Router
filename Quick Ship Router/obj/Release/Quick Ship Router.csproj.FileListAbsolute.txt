@@ -1,0 +1,2 @@
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Release\Quick Ship Router.exe.config
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick Ship Router.csproj.ResolveComReference.cache
