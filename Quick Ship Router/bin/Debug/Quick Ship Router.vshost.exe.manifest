@@ -42,14 +42,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Quick Ship Router.exe" size="82952">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Quick Ship Router.exe" size="92680">
       <assemblyIdentity name="Quick Ship Router" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>g+wJsM330fIgdt2IMeX9MdXvm41dgHPgmkJARvgk86o=</dsig:DigestValue>
+        <dsig:DigestValue>yAgGGSBik25vT45uYKHL1ag8jJpCAhtwBTgGBYwAX5w=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

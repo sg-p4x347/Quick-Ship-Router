@@ -65,18 +65,14 @@ namespace Quick_Ship_Router
             loadingLabel.Text = "Logging in...";
             MAS = new OdbcConnection();
             // initialize the MAS connection
-#if DEBUG
-            MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347";
-#else
             MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;";
-#endif
             try
             {
                 MAS.Open();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show("Failed to log in :(");
                 return false;
             }
             loadingLabel.Text = "";
@@ -128,62 +124,7 @@ namespace Quick_Ship_Router
             }
             return false;
         }
-        private bool ImportOrders(string specificOrderNo,bool invertCustomers)
-        {
-            loadingLabel.Text = "Importing Orders...";
-            // only leave the previous orders if we are adding one by one
-            if (specificOrderNo == "")
-            {
-                orders.Clear();
-            }
-            string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
-            // OrderDate >= {d '" +  todayString + "'}
-            string customerNames = "";
-            for (int i = 0; i < customerList.Items.Count; i++)
-            {
-                if (customerList.GetItemCheckState(i) == CheckState.Checked) {
-                    customerNames += (customerNames.Length > 0 ? "," : "") + "'" + customerList.GetItemText(customerList.Items[i]) + "'";
-                }
-            }
-            // get informatino from header
-            OdbcCommand command = MAS.CreateCommand();
-            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE " + (specificOrderNo != "" ? "SalesOrderNo = '" + specificOrderNo + "'" : "CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
-            OdbcDataReader reader = command.ExecuteReader();
-            // read info
-            while (reader.Read())
-            {
-                // get information from detail
-                OdbcCommand detailCommand = MAS.CreateCommand();
-                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
-                OdbcDataReader detailReader = detailCommand.ExecuteReader();
-                // Read each line of the Sales Order, looking for the base Table items, ignoring kits
-                while (detailReader.Read())
-                {
-                    // Import bill & quantity 
-                    string billCode = detailReader.GetString(0);
-                    if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT" && IsTable(billCode))
-                    {
-                        Order order = new Order();
-                        // scrap this order if anything is missing
-                        if (reader.IsDBNull(0)) continue;
-                        order.SalesOrderNo = reader.GetString(0);
-                        if (reader.IsDBNull(1)) continue;
-                        order.OrderDate = reader.GetDate(1);
-                        if (reader.IsDBNull(2)) continue;
-                        order.CustomerNo = reader.GetString(2);
-                        if (reader.IsDBNull(3)) continue;
-                        order.ShipVia = reader.GetString(3);
-                        // this is a table
-                        order.ItemCode = billCode;
-                        order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
-                        orders.Add(order);
-                        continue;
-                    }
-                }
-            }
-            loadingLabel.Text = "";
-            return true;
-        }
+       
         private bool IsTable(string s)
         {
             return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
@@ -272,7 +213,11 @@ namespace Quick_Ship_Router
                         bool foundMatch = false;
                         foreach (Router printedRouter in printedRouters)
                         {
-                            if (printedRouter.Orders.FindIndex(j => j.SalesOrderNo == order.SalesOrderNo) >= 0) foundMatch = true; break;
+                            if (printedRouter.Orders.FindIndex(j => j.SalesOrderNo == order.SalesOrderNo) >= 0)
+                            {
+                                foundMatch = true;
+                                break;
+                            }
                         }
                         if (foundMatch) continue;
                     }
@@ -415,7 +360,7 @@ namespace Quick_Ship_Router
                                 router.PartsPerBlank = Convert.ToInt32(blankRange.Item[7].Value2);
                             } else
                             {
-                                if (blankRange.Item[5] > 0)
+                                if (blankRange.Item[5].Value2 != "-99999")
                                 {
                                     router.BlankSize = "(" + blankRange.Item[5].Value2 + ") ~sheet";
                                 } else
@@ -452,34 +397,34 @@ namespace Quick_Ship_Router
         private void DisplayRouters()
         {
             loadingLabel.Text = "Travelers";
-            // display the results to the listView
-            listView.Clear();
+            // display the results to the tableListView
+            tableListView.Clear();
             // Set to details view.
-            listView.View = View.Details;
+            tableListView.View = View.Details;
 
             // production info
-            listView.Columns.Add("Part No.", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("ID", 50, HorizontalAlignment.Left);
-            listView.Columns.Add("Printed", 50, HorizontalAlignment.Left);
-            listView.Columns.Add("Ordered", 75, HorizontalAlignment.Left);
-            listView.Columns.Add("Need to Produce", 75, HorizontalAlignment.Left);
-            listView.Columns.Add("Blanks", 75, HorizontalAlignment.Left);
-            listView.Columns.Add("Leftover", 75, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Part No.", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("ID", 50, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Printed", 50, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Ordered", 75, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Need to Produce", 75, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Blanks", 75, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Leftover", 75, HorizontalAlignment.Left);
             // order info
-            listView.Columns.Add("Ship date(s)", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Customer(s)", 200, HorizontalAlignment.Left);
-            listView.Columns.Add("Order No.(s)", 200, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Ship date(s)", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Customer(s)", 200, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Order No.(s)", 200, HorizontalAlignment.Left);
             // Pack info
-            listView.Columns.Add("Reg pack", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Sup pack", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Reg pack", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Sup pack", 100, HorizontalAlignment.Left);
             // Traveler info
-            listView.Columns.Add("Drawing No.", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Blank No.", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Blank Size", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Heian/Weeke Labor", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Vector Labor", 100, HorizontalAlignment.Left);
-            listView.Columns.Add("Color", 200, HorizontalAlignment.Left);
-            listView.Columns.Add("Hardware", 200, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Drawing No.", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Blank No.", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Blank Size", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Heian/Weeke Labor", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Vector Labor", 100, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Color", 200, HorizontalAlignment.Left);
+            tableListView.Columns.Add("Hardware", 200, HorizontalAlignment.Left);
             
             
             foreach (Router router in routers)
@@ -516,32 +461,101 @@ namespace Quick_Ship_Router
                     router.Vector.QuantityPerBill.ToString() + " " + router.Vector.Unit,
                     router.Color,router.Hardware,
                 };
-                ListViewItem listViewItem = new ListViewItem(row);
-                listViewItem.Checked = true;
-                listView.Items.Add(listViewItem);
+                ListViewItem tableListViewItem = new ListViewItem(row);
+                tableListViewItem.Checked = true;
+                tableListView.Items.Add(tableListViewItem);
             }
         }
+        //======================
+        // Open Order
+        //======================
+        private bool ImportOrders(string specificOrderNo, bool invertCustomers)
+        {
+            List<Order> tableOrders = new List<Order>();
+            List<Order> chairOrders = new List<Order>();
+            loadingLabel.Text = "Importing Orders...";
+            // only leave the previous orders if we are adding one by one
+            if (specificOrderNo == "")
+            {
+                orders.Clear();
+            }
+            string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
+            // OrderDate >= {d '" +  todayString + "'}
+            string customerNames = "";
+            for (int i = 0; i < customerList.Items.Count; i++)
+            {
+                if (customerList.GetItemCheckState(i) == CheckState.Checked)
+                {
+                    customerNames += (customerNames.Length > 0 ? "," : "") + "'" + customerList.GetItemText(customerList.Items[i]) + "'";
+                }
+            }
+            // get informatino from header
+            OdbcCommand command = MAS.CreateCommand();
+            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE " + (specificOrderNo != "" ? "SalesOrderNo = '" + specificOrderNo + "'" : "CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
+            OdbcDataReader reader = command.ExecuteReader();
+            // read info
+            while (reader.Read())
+            {
+                // get information from detail
+                OdbcCommand detailCommand = MAS.CreateCommand();
+                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
+                OdbcDataReader detailReader = detailCommand.ExecuteReader();
+                // Read each line of the Sales Order, looking for the base Table items, ignoring kits
+                while (detailReader.Read())
+                {
+                    // Import bill & quantity 
+                    string billCode = detailReader.GetString(0);
+                    if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT" && IsTable(billCode))
+                    {
+                        Order order = new Order();
+                        // scrap this order if anything is missing
+                        if (reader.IsDBNull(0)) continue;
+                        order.SalesOrderNo = reader.GetString(0);
+                        if (reader.IsDBNull(1)) continue;
+                        order.OrderDate = reader.GetDate(1);
+                        if (reader.IsDBNull(2)) continue;
+                        order.CustomerNo = reader.GetString(2);
+                        if (reader.IsDBNull(3)) continue;
+                        order.ShipVia = reader.GetString(3);
+                        // this is a table
+                        order.ItemCode = billCode;
+                        order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
+                        orders.Add(order);
+                        continue;
+                    }
+                }
+            }
+            loadingLabel.Text = "";
+            return true;
+        }
+        //======================
+        // Chairs
+        //======================
+        private ChairManager chairManager = new ChairManager();
+        //======================
+        // Events
+        //======================
         private void btnPrint_Click(object sender, EventArgs e)
         {
             loadingLabel.Text = "Printing Travelers...";
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            //var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "router.xlsx"),
+            //var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "traveler.xlsx"),
             //    0, false, 5, "", "", false, 2, "",
             //    true, false, 0, true, false, false);
-            var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "router.xlsx"),
+            var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "traveler.xlsx"),
                 0, false, 5, "", "", false, 2, "",
                 true, false, 0, true, false, false);
             var worksheets = workbook.Worksheets;
-            var templateSheet = (Excel.Worksheet)worksheets.get_Item("Sheet1");
+            var templateSheet = (Excel.Worksheet)worksheets.get_Item("Table");
             // open printed log file
             System.IO.StreamWriter file = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
             
             
             // create the output workbook
             int currentSheet = 2;
-            for (int itemIndex = 0; itemIndex < listView.Items.Count; itemIndex++)
+            for (int itemIndex = 0; itemIndex < tableListView.Items.Count; itemIndex++)
             {
-                if (listView.Items[itemIndex].Checked)
+                if (tableListView.Items[itemIndex].Checked)
                 {
                     Router router = routers[itemIndex];
                     templateSheet.Copy(Type.Missing, workbook.Worksheets[currentSheet - 1]);
@@ -731,7 +745,7 @@ namespace Quick_Ship_Router
         }
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
-            listView.Clear();
+            tableListView.Clear();
             CreateTravelers("",false);
         }
 
@@ -766,13 +780,13 @@ namespace Quick_Ship_Router
 
         private void btnInvertCustomers_Click(object sender, EventArgs e)
         {
-            listView.Clear();
+            tableListView.Clear();
             CreateTravelers("", true);
         }
 
         private void btnClear_Click(object sender, EventArgs e)
         {
-            listView.Clear();
+            tableListView.Clear();
             orders.Clear();
         }
         // Create only previously printed travelers
