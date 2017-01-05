@@ -117,6 +117,7 @@ namespace Quick_Ship_Router
         private string m_billNo = "";
         private string m_drawingNo = "";
         private double m_quantityPerBill = 0.0;
+        private double m_totalQuantity = 0.0;
         private char m_billType = 'S';
         private string m_billDesc;
         private string m_currentBillRevision;
@@ -266,6 +267,19 @@ namespace Quick_Ship_Router
             set
             {
                 m_drawingNo = value;
+            }
+        }
+
+        public double TotalQuantity
+        {
+            get
+            {
+                return m_totalQuantity;
+            }
+
+            set
+            {
+                m_totalQuantity = value;
             }
         }
     }

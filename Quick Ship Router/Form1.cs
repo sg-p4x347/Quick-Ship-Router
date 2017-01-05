@@ -25,20 +25,22 @@ namespace Quick_Ship_Router
         public Form1()
         {
             InitializeComponent();
+            
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
             excelApp = new Excel.Application();
             excelApp.DisplayAlerts = false;
             // Open the traveler template
             workbooks = excelApp.Workbooks;
-        }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
             PopulateCustomers();
             PopulateProductLines();
             // connect to MAS
             if (ConnectToData())
             {
                 login.Enabled = false;
+                chairManager.MAS = MAS;
             }
         }
         // Interface
@@ -69,6 +71,7 @@ namespace Quick_Ship_Router
             try
             {
                 MAS.Open();
+                chairManager = new ChairManager(MAS, null, chairListView);
             }
             catch (Exception ex)
             {
@@ -114,21 +117,14 @@ namespace Quick_Ship_Router
             // Import new orders
             if (ImportOrders(specificOrderNo,invertCustomers))
             {
-                //orders = FilterByProduct(orders);
-                // Create routers
-                if (CreateRouters(false,true))
-                {
-                    loadingLabel.Text = "Travelers";
-                    return true;
-                }
+                // Create travelers
+                chairManager.CompileTravelers();
+                return true;
             }
             return false;
         }
        
-        private bool IsTable(string s)
-        {
-            return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
-        }
+        
         private List<Order> FilterByProduct(List<Order> orders)
         {
             loadingLabel.Text = "Filtering...";
@@ -471,14 +467,8 @@ namespace Quick_Ship_Router
         //======================
         private bool ImportOrders(string specificOrderNo, bool invertCustomers)
         {
-            List<Order> tableOrders = new List<Order>();
-            List<Order> chairOrders = new List<Order>();
             loadingLabel.Text = "Importing Orders...";
-            // only leave the previous orders if we are adding one by one
-            if (specificOrderNo == "")
-            {
-                orders.Clear();
-            }
+
             string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
             // OrderDate >= {d '" +  todayString + "'}
             string customerNames = "";
@@ -491,7 +481,7 @@ namespace Quick_Ship_Router
             }
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
-            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE " + (specificOrderNo != "" ? "SalesOrderNo = '" + specificOrderNo + "'" : "CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
+            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : "");
             OdbcDataReader reader = command.ExecuteReader();
             // read info
             while (reader.Read())
@@ -505,29 +495,72 @@ namespace Quick_Ship_Router
                 {
                     // Import bill & quantity 
                     string billCode = detailReader.GetString(0);
-                    if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT" && IsTable(billCode))
+                    if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT")
                     {
-                        Order order = new Order();
-                        // scrap this order if anything is missing
-                        if (reader.IsDBNull(0)) continue;
-                        order.SalesOrderNo = reader.GetString(0);
-                        if (reader.IsDBNull(1)) continue;
-                        order.OrderDate = reader.GetDate(1);
-                        if (reader.IsDBNull(2)) continue;
-                        order.CustomerNo = reader.GetString(2);
-                        if (reader.IsDBNull(3)) continue;
-                        order.ShipVia = reader.GetString(3);
-                        // this is a table
-                        order.ItemCode = billCode;
-                        order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
-                        orders.Add(order);
-                        continue;
+                        if (IsTable(billCode))
+                        {
+                            // this is a table
+                            Order order = new Order();
+                            // scrap this order if anything is missing
+                            if (reader.IsDBNull(0)) continue;
+                            order.SalesOrderNo = reader.GetString(0);
+                            if (reader.IsDBNull(1)) continue;
+                            order.OrderDate = reader.GetDate(1);
+                            if (reader.IsDBNull(2)) continue;
+                            order.CustomerNo = reader.GetString(2);
+                            if (reader.IsDBNull(3)) continue;
+                            order.ShipVia = reader.GetString(3);
+
+                            order.ItemCode = billCode;
+                            order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
+                            tableManager.Orders.Add(order);
+                            continue;
+                        } else if (IsChair(billCode))
+                        {
+                            // this is a table
+                            Order order = new Order();
+                            // scrap this order if anything is missing
+                            if (reader.IsDBNull(0)) continue;
+                            order.SalesOrderNo = reader.GetString(0);
+                            if (reader.IsDBNull(1)) continue;
+                            order.OrderDate = reader.GetDate(1);
+                            if (reader.IsDBNull(2)) continue;
+                            order.CustomerNo = reader.GetString(2);
+                            if (reader.IsDBNull(3)) continue;
+                            order.ShipVia = reader.GetString(3);
+
+                            order.ItemCode = billCode;
+                            order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
+                            chairManager.Orders.Add(order);
+                            continue;
+                        }
+
                     }
                 }
             }
             loadingLabel.Text = "";
             return true;
         }
+        private bool IsTable(string s)
+        {
+            return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
+        }
+        private bool IsChair(string s)
+        {
+            if (s.Substring(0,2) == "38")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 5 && parts[1].Length == 4 && parts[2].Length == 3);
+            } else
+            {
+                return false;
+            }
+            
+        }
+        //======================
+        // Tables
+        //======================
+        private ChairManager tableManager = new ChairManager();
         //======================
         // Chairs
         //======================
@@ -767,15 +800,15 @@ namespace Quick_Ship_Router
         private void btnCreateSpecificOrder_Click(object sender, EventArgs e)
         {
             // Import new orders
-            if (ImportOrders(specificOrder.Text, false))
-            {
-                //orders = FilterByProduct(orders);
-                // Create routers
-                if (CreateRouters(false, false))
-                {
-                    loadingLabel.Text = "Travelers";
-                }
-            }
+            //if (ImportOrders(specificOrder.Text, false))
+            //{
+            //    //orders = FilterByProduct(orders);
+            //    // Create routers
+            //    if (CreateRouters(false, false))
+            //    {
+            //        loadingLabel.Text = "Travelers";
+            //    }
+            //}
         }
 
         private void btnInvertCustomers_Click(object sender, EventArgs e)

@@ -145,52 +145,104 @@ namespace Quick_Ship_Router
             // find work and or material
             foreach (Item componentItem in bill.ComponentItems)
             {
+                // update the component's total quantity
+                componentItem.TotalQuantity = bill.TotalQuantity * componentItem.QuantityPerBill;
+                // sort out key components
                 string itemCode = componentItem.ItemCode;
                 if (itemCode == "/LWKE1" || itemCode == "/LWKE2" || itemCode == "/LCNC1" || itemCode == "/LCNC2")
                 {
                     // CNC labor
-                    m_cnc = componentItem;
+                    if (m_cnc == null)
+                    {
+                        m_cnc = componentItem;
+                    } else
+                    {
+                        m_cnc.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode == "/LBND2" || itemCode == "/LBND3")
                 {
                     // Straight Edgebander labor
-                    m_ebander = componentItem;
+                    if (m_ebander == null)
+                    {
+                        m_ebander = componentItem;
+                    } else
+                    {
+                        m_ebander.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode == "/LPNL1" || itemCode == "/LPNL2")
                 {
                     // Panel Saw labor
-                    m_saw = componentItem;
+                    if (m_saw == null)
+                    {
+                        m_saw = componentItem;
+                    } else
+                    {
+                        m_saw.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode == "/LCEB1" | itemCode == "/LCEB2")
                 {
                     // Contour Edge Bander labor (vector)
-                    m_vector = componentItem;
+                    if (m_vector == null)
+                    {
+                        m_vector = componentItem;
+                    } else
+                    {
+                        m_vector.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode == "/LATB1" || itemCode == "/LATB2" || itemCode == "/LATB3")
                 {
                     // Assembly labor
-                    m_assm = componentItem;
+                    if (m_assm == null)
+                    {
+                        m_assm = componentItem;
+                    } else
+                    {
+                        m_assm.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode == "/LBOX1")
                 {
                     // Box construction labor
-                    m_box = componentItem;
+                    if (m_box == null)
+                    {
+                        m_box = componentItem;
+                    } else
+                    {
+                        m_box.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode.Substring(0, 3) == "006")
                 {
                     // Material
-                    m_material = componentItem;
+                    if (m_material == null)
+                    {
+                        m_material = componentItem;
+                    } else
+                    {
+                        m_material.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (itemCode.Substring(0, 2) == "87")
                 {
                     // Edgeband
-                    m_eband = componentItem;
+                    if (m_eband == null)
+                    {
+                        m_eband = componentItem;
+                    } else
+                    {
+                        m_eband.TotalQuantity += componentItem.TotalQuantity;
+                    }
                 }
                 else if (m_box == null && itemCode.Substring(0, 2) == "90")
                 {
                     // Paid for box
                     m_boxItemCode = itemCode;
-                } else
+                }
+                else
                 {
                     // anything else
                     // check the blacklist
@@ -198,7 +250,21 @@ namespace Quick_Ship_Router
                     {
                         if (itemCode != blItem)
                         {
-                            m_components.Add(componentItem);
+                            // check for existing item first
+                            bool foundItem = false;
+                            foreach (Item component in m_components)
+                            {
+                                if (component.ItemCode == itemCode)
+                                {
+                                    foundItem = true;
+                                    component.TotalQuantity += componentItem.TotalQuantity;
+                                    break;
+                                }
+                            }
+                            if (!foundItem)
+                            {
+                                m_components.Add(componentItem);
+                            }
                         }
                     }
                 }
@@ -206,6 +272,7 @@ namespace Quick_Ship_Router
             // Go deeper into each component bill
             foreach (Bill componentBill in bill.ComponentBills)
             {
+                componentBill.TotalQuantity = bill.TotalQuantity * componentBill.QuantityPerBill;
                 FindComponents(componentBill);
             }
         }
@@ -245,6 +312,7 @@ namespace Quick_Ship_Router
             doc += "\"ID\":" + '"' + m_ID.ToString("D6") + '"' + ",";
             doc += "\"itemCode\":" + '"' + m_part.BillNo + '"' + ",";
             doc += "\"quantity\":" + '"' + m_quantity + '"' + ",";
+            doc += "\"type\":" + '"' + this.GetType().Name + '"' + ",";
             doc += "\"orders\":[";
             foreach (Order order in m_orders)
             {
@@ -255,39 +323,335 @@ namespace Quick_Ship_Router
             doc += "},\n";
             return doc;
         }
-        
+
         //===========================
         // PRIVATE
         //===========================
 
         // Properties
-        protected List<Order> m_orders { get; set; } = new List<Order>();
-        protected Bill m_part { get; set; } = null;
-        protected int m_ID { get; set; } = 0;
-        protected string m_timeStamp { get; set; } = "";
-        protected bool m_printed { get; set; } = false;
-        protected string m_partNo { get; set; } = "";
-        protected string m_drawingNo { get; set; } = "";
-        protected int m_quantity { get; set; } = 0;
-        protected string m_color { get; set; } = "";
+        protected List<Order> m_orders = new List<Order>();
+        protected Bill m_part = null;
+        protected int m_ID = 0;
+        protected string m_timeStamp = "";
+        protected bool m_printed = false;
+        protected string m_partNo = "";
+        protected string m_drawingNo = "";
+        protected int m_quantity = 0;
+        protected string m_color = "";
         // Labor
-        protected Item m_cnc { get; set; } = null; // labor item
-        protected Item m_vector { get; set; } = null; // labor item
-        protected Item m_ebander { get; set; } = null; // labor item
-        protected Item m_saw { get; set; } = null; // labor item
-        protected Item m_assm { get; set; } = null; // labor item
-        protected Item m_box { get; set; } = null; // labor item
+        protected Item m_cnc = null; // labor item
+        protected Item m_vector = null; // labor item
+        protected Item m_ebander = null; // labor item
+        protected Item m_saw = null; // labor item
+        protected Item m_assm= null; // labor item
+        protected Item m_box = null; // labor item
         // Material
-        protected Item m_material { get; set; } = null; // board material
-        protected Item m_eband { get; set; } = null; // edgebanding
-        protected List<Item> m_components { get; set; } = new List<Item>(); // everything that isn't work, boxes, material or edgebanding
-        protected List<BlacklistItem> m_blacklist { get; set; } = new List<BlacklistItem>();
+        protected Item m_material = null; // board material
+        protected Item m_eband = null; // edgebanding
+        protected List<Item> m_components = new List<Item>(); // everything that isn't work, boxes, material or edgebanding
+        protected List<BlacklistItem> m_blacklist = new List<BlacklistItem>();
         // Box
-        protected string m_boxItemCode { get; set; } = "";
-        protected string m_regPack { get; set; } = "N/A";
-        protected int m_regPackQty { get; set; } = 0;
-        protected string m_supPack { get; set; } = "N/A";
-        protected int m_supPackQty { get; set; } = 0;
-        
+        protected string m_boxItemCode = "";
+        protected string m_regPack = "N/A";
+        protected int m_regPackQty = 0;
+        protected string m_supPack = "N/A";
+        protected int m_supPackQty = 0;
+
+        internal List<Order> Orders
+        {
+            get
+            {
+                return m_orders;
+            }
+
+            set
+            {
+                m_orders = value;
+            }
+        }
+
+        internal Bill Part
+        {
+            get
+            {
+                return m_part;
+            }
+        }
+
+        internal int ID
+        {
+            get
+            {
+                return m_ID;
+            }
+        }
+
+        internal string TimeStamp
+        {
+            get
+            {
+                return m_timeStamp;
+            }
+        }
+
+        internal bool Printed
+        {
+            get
+            {
+                return m_printed;
+            }
+
+            set
+            {
+                m_printed = value;
+            }
+        }
+
+        internal string PartNo
+        {
+            get
+            {
+                return m_partNo;
+            }
+
+            set
+            {
+                m_partNo = value;
+            }
+        }
+
+        internal string DrawingNo
+        {
+            get
+            {
+                return m_drawingNo;
+            }
+
+            set
+            {
+                m_drawingNo = value;
+            }
+        }
+
+        internal int Quantity
+        {
+            get
+            {
+                return m_quantity;
+            }
+
+            set
+            {
+                m_quantity = value;
+            }
+        }
+
+        internal string Color
+        {
+            get
+            {
+                return m_color;
+            }
+
+            set
+            {
+                m_color = value;
+            }
+        }
+
+        internal Item Cnc
+        {
+            get
+            {
+                return m_cnc;
+            }
+
+            set
+            {
+                m_cnc = value;
+            }
+        }
+
+        internal Item Vector
+        {
+            get
+            {
+                return m_vector;
+            }
+
+            set
+            {
+                m_vector = value;
+            }
+        }
+
+        internal Item Ebander
+        {
+            get
+            {
+                return m_ebander;
+            }
+
+            set
+            {
+                m_ebander = value;
+            }
+        }
+
+        internal Item Saw
+        {
+            get
+            {
+                return m_saw;
+            }
+
+            set
+            {
+                m_saw = value;
+            }
+        }
+
+        internal Item Assm
+        {
+            get
+            {
+                return m_assm;
+            }
+
+            set
+            {
+                m_assm = value;
+            }
+        }
+
+        internal Item Box
+        {
+            get
+            {
+                return m_box;
+            }
+
+            set
+            {
+                m_box = value;
+            }
+        }
+
+        internal Item Material
+        {
+            get
+            {
+                return m_material;
+            }
+
+            set
+            {
+                m_material = value;
+            }
+        }
+
+        internal Item Eband
+        {
+            get
+            {
+                return m_eband;
+            }
+
+            set
+            {
+                m_eband = value;
+            }
+        }
+
+        internal List<Item> Components
+        {
+            get
+            {
+                return m_components;
+            }
+
+            set
+            {
+                m_components = value;
+            }
+        }
+
+        internal List<BlacklistItem> Blacklist
+        {
+            get
+            {
+                return m_blacklist;
+            }
+
+            set
+            {
+                m_blacklist = value;
+            }
+        }
+
+        internal string BoxItemCode
+        {
+            get
+            {
+                return m_boxItemCode;
+            }
+
+            set
+            {
+                m_boxItemCode = value;
+            }
+        }
+
+        internal string RegPack
+        {
+            get
+            {
+                return m_regPack;
+            }
+
+            set
+            {
+                m_regPack = value;
+            }
+        }
+
+        internal int RegPackQty
+        {
+            get
+            {
+                return m_regPackQty;
+            }
+
+            set
+            {
+                m_regPackQty = value;
+            }
+        }
+
+        internal string SupPack
+        {
+            get
+            {
+                return m_supPack;
+            }
+
+            set
+            {
+                m_supPack = value;
+            }
+        }
+
+        internal int SupPackQty
+        {
+            get
+            {
+                return m_supPackQty;
+            }
+
+            set
+            {
+                m_supPackQty = value;
+            }
+        }
     }
 }

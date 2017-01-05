@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Quick_Ship_Router
 {
-    enum Blacklist
+    enum Method
     {
         StartsWith,
         IsEqualTo,
@@ -17,10 +17,10 @@ namespace Quick_Ship_Router
     {
         public BlacklistItem(string itemCode)
         {
-            m_method = Blacklist.IsEqualTo;
+            m_method = Method.IsEqualTo;
             m_itemCode = itemCode;
         }
-        public BlacklistItem(Blacklist method, string itemCode)
+        public BlacklistItem(Method method, string itemCode)
         {
             m_method = method;
             m_itemCode = itemCode;
@@ -28,18 +28,18 @@ namespace Quick_Ship_Router
         
         public static bool operator ==(string item,BlacklistItem blacklist)
         {
-            if (blacklist.m_method == Blacklist.IsEqualTo)
+            if (blacklist.m_method == Method.IsEqualTo)
             {
                 return item == blacklist.m_itemCode;
             }
-            else if (blacklist.m_method == Blacklist.StartsWith)
+            else if (blacklist.m_method == Method.StartsWith)
             {
                 return item.Substring(0, blacklist.m_itemCode.Length) == blacklist.m_itemCode;
             }
-            else if (blacklist.m_method == Blacklist.EndsWith)
+            else if (blacklist.m_method == Method.EndsWith)
             {
                 return item.Substring((item.Length - 1) - blacklist.m_itemCode.Length, item.Length-1) == blacklist.m_itemCode;
-            } else if (blacklist.m_method == Blacklist.Has)
+            } else if (blacklist.m_method == Method.Has)
             {
                 return item.IndexOf(blacklist.m_itemCode) != -1;
             } else
@@ -49,19 +49,19 @@ namespace Quick_Ship_Router
         }
         public static bool operator !=(string item, BlacklistItem blacklist)
         {
-            if (blacklist.m_method == Blacklist.IsEqualTo)
+            if (blacklist.m_method == Method.IsEqualTo)
             {
                 return !(item == blacklist.m_itemCode);
             }
-            else if (blacklist.m_method == Blacklist.StartsWith)
+            else if (blacklist.m_method == Method.StartsWith)
             {
                 return !(item.Substring(0, blacklist.m_itemCode.Length) == blacklist.m_itemCode);
             }
-            else if (blacklist.m_method == Blacklist.EndsWith)
+            else if (blacklist.m_method == Method.EndsWith)
             {
                 return !(item.Substring((item.Length - 1) - blacklist.m_itemCode.Length, item.Length - 1) == blacklist.m_itemCode);
             }
-            else if (blacklist.m_method == Blacklist.Has)
+            else if (blacklist.m_method == Method.Has)
             {
                 return !(item.IndexOf(blacklist.m_itemCode) != -1);
             } else
@@ -69,7 +69,7 @@ namespace Quick_Ship_Router
                 return false;
             }
         }
-        private Blacklist m_method = Blacklist.IsEqualTo;
+        private Method m_method = Method.IsEqualTo;
         private string m_itemCode = "";
 
     }

@@ -17,8 +17,8 @@ namespace Quick_Ship_Router
         // PUBLIC
         //===========================
 
-        // Doesn't do anything
-        public Table() : base() { }
+        public Table() : base() {
+        }
         // Creates a traveler from a part number and quantity
         public Table(string partNo, int quantity) : base(partNo, quantity)
         {
@@ -34,9 +34,9 @@ namespace Quick_Ship_Router
         //===========================
         private void GetBlacklist()
         {
-            m_blacklist.Add(new BlacklistItem(Blacklist.StartsWith, "88")); // Glue items
-            m_blacklist.Add(new BlacklistItem(Blacklist.StartsWith, "92")); // Foam items
-            m_blacklist.Add(new BlacklistItem(Blacklist.StartsWith, "/")); // Misc work items
+            m_blacklist.Add(new BlacklistItem(Method.StartsWith, "88")); // Glue items
+            m_blacklist.Add(new BlacklistItem(Method.StartsWith, "92")); // Foam items
+            m_blacklist.Add(new BlacklistItem(Method.StartsWith, "/")); // Misc work items
         }
         private int m_colorNo { get; set; } = 0;
         private string m_shapeNo { get; set; } = "";
