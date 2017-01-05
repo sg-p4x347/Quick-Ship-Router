@@ -106,7 +106,6 @@ namespace Quick_Ship_Router
             // set META information
             m_partNo = partNo;
             m_quantity = quantity;
-            m_colorNo = m_partNo.Substring(m_partNo.Length - 2);
             // open the currentID.txt file
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             System.IO.StreamReader readID = new StreamReader(System.IO.Path.Combine(exeDir, "currentID.txt"));
@@ -121,8 +120,6 @@ namespace Quick_Ship_Router
             // set META information
             m_partNo = partNo;
             m_quantity = quantity;
-            m_colorNo = m_partNo.Substring(m_partNo.Length - 2);
-            ImportPart(MAS);
             // open the currentID.txt file
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             System.IO.StreamReader readID = new StreamReader(System.IO.Path.Combine(exeDir, "currentID.txt"));
@@ -130,6 +127,9 @@ namespace Quick_Ship_Router
             readID.Close();
             // increment the current ID
             File.WriteAllText(System.IO.Path.Combine(exeDir, "currentID.txt"), (m_ID + 1).ToString() + '\n');
+
+            // Import the part
+            ImportPart(MAS);
         }
         public void ImportPart(OdbcConnection MAS)
         {
@@ -139,7 +139,8 @@ namespace Quick_Ship_Router
                 m_drawingNo = m_part.DrawingNo;
             }
         }
-        public void FindWorkMaterial(Bill bill)
+        // Finds all the components in the top level bill, setting key components along the way
+        public void FindComponents(Bill bill)
         {
             // find work and or material
             foreach (Item componentItem in bill.ComponentItems)
@@ -189,12 +190,23 @@ namespace Quick_Ship_Router
                 {
                     // Paid for box
                     m_boxItemCode = itemCode;
+                } else
+                {
+                    // anything else
+                    // check the blacklist
+                    foreach (BlacklistItem blItem in m_blacklist )
+                    {
+                        if (itemCode != blItem)
+                        {
+                            m_components.Add(componentItem);
+                        }
+                    }
                 }
             }
             // Go deeper into each component bill
             foreach (Bill componentBill in bill.ComponentBills)
             {
-                FindWorkMaterial(componentBill);
+                FindComponents(componentBill);
             }
         }
         //check inventory to see how many actually need to be produced.
@@ -257,7 +269,6 @@ namespace Quick_Ship_Router
         protected string m_partNo { get; set; } = "";
         protected string m_drawingNo { get; set; } = "";
         protected int m_quantity { get; set; } = 0;
-        protected string m_colorNo { get; set; } = "";
         protected string m_color { get; set; } = "";
         // Labor
         protected Item m_cnc { get; set; } = null; // labor item
@@ -269,7 +280,8 @@ namespace Quick_Ship_Router
         // Material
         protected Item m_material { get; set; } = null; // board material
         protected Item m_eband { get; set; } = null; // edgebanding
-        protected List<Item> m_components { get; set; } = new List<Item>(); // metal components
+        protected List<Item> m_components { get; set; } = new List<Item>(); // everything that isn't work, boxes, material or edgebanding
+        protected List<BlacklistItem> m_blacklist { get; set; } = new List<BlacklistItem>();
         // Box
         protected string m_boxItemCode { get; set; } = "";
         protected string m_regPack { get; set; } = "N/A";

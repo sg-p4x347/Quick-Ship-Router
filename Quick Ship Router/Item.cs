@@ -26,8 +26,8 @@ namespace Quick_Ship_Router
                 try
                 {
                     //if (!reader.IsDBNull(0)) m_itemType = reader.GetInt32(0);
-                    if (!reader.IsDBNull(0)) m_itemCodeDesc = reader.GetString(1);
-                    if (!reader.IsDBNull(1)) m_unit = reader.GetString(2);
+                    if (!reader.IsDBNull(0)) m_itemCodeDesc = reader.GetString(0);
+                    if (!reader.IsDBNull(1)) m_unit = reader.GetString(1);
                 }
                 catch (Exception ex)
                 {

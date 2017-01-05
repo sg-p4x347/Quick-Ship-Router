@@ -29,10 +29,10 @@
         private void InitializeComponent()
         {
             this.btnPrint = new System.Windows.Forms.Button();
-            this.listView = new System.Windows.Forms.ListView();
             this.loadingLabel = new System.Windows.Forms.Label();
             this.showToday = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnCreatedPrinted = new System.Windows.Forms.Button();
             this.btnCreateSpecificOrder = new System.Windows.Forms.Button();
             this.specificOrder = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
@@ -47,8 +47,15 @@
             this.btnPrintSummary = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.btnClear = new System.Windows.Forms.Button();
-            this.btnCreatedPrinted = new System.Windows.Forms.Button();
+            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.tableListView = new System.Windows.Forms.ListView();
+            this.chairListView = new System.Windows.Forms.ListView();
             this.groupBox1.SuspendLayout();
+            this.tabControl1.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnPrint
@@ -61,16 +68,6 @@
             this.btnPrint.Text = "Print Routers";
             this.btnPrint.UseVisualStyleBackColor = false;
             this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
-            // 
-            // listView
-            // 
-            this.listView.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.listView.CheckBoxes = true;
-            this.listView.Location = new System.Drawing.Point(12, 41);
-            this.listView.Name = "listView";
-            this.listView.Size = new System.Drawing.Size(1560, 374);
-            this.listView.TabIndex = 2;
-            this.listView.UseCompatibleStateImageBehavior = false;
             // 
             // loadingLabel
             // 
@@ -112,6 +109,17 @@
             this.groupBox1.TabIndex = 6;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Refined Search";
+            // 
+            // btnCreatedPrinted
+            // 
+            this.btnCreatedPrinted.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
+            this.btnCreatedPrinted.Location = new System.Drawing.Point(168, 268);
+            this.btnCreatedPrinted.Name = "btnCreatedPrinted";
+            this.btnCreatedPrinted.Size = new System.Drawing.Size(156, 37);
+            this.btnCreatedPrinted.TabIndex = 16;
+            this.btnCreatedPrinted.Text = "Only printed travelers";
+            this.btnCreatedPrinted.UseVisualStyleBackColor = false;
+            this.btnCreatedPrinted.Click += new System.EventHandler(this.btnCreatedPrinted_Click);
             // 
             // btnCreateSpecificOrder
             // 
@@ -257,16 +265,59 @@
             this.btnClear.UseVisualStyleBackColor = false;
             this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             // 
-            // btnCreatedPrinted
+            // tabControl1
             // 
-            this.btnCreatedPrinted.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
-            this.btnCreatedPrinted.Location = new System.Drawing.Point(168, 268);
-            this.btnCreatedPrinted.Name = "btnCreatedPrinted";
-            this.btnCreatedPrinted.Size = new System.Drawing.Size(156, 37);
-            this.btnCreatedPrinted.TabIndex = 16;
-            this.btnCreatedPrinted.Text = "Only printed travelers";
-            this.btnCreatedPrinted.UseVisualStyleBackColor = false;
-            this.btnCreatedPrinted.Click += new System.EventHandler(this.btnCreatedPrinted_Click);
+            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Location = new System.Drawing.Point(12, 41);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.Size = new System.Drawing.Size(1560, 374);
+            this.tabControl1.TabIndex = 17;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.tableListView);
+            this.tabPage1.Location = new System.Drawing.Point(4, 22);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(1552, 348);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "Tables";
+            this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.chairListView);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(1552, 348);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Chairs";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // tableListView
+            // 
+            this.tableListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableListView.Location = new System.Drawing.Point(6, 6);
+            this.tableListView.Name = "tableListView";
+            this.tableListView.Size = new System.Drawing.Size(1540, 336);
+            this.tableListView.TabIndex = 0;
+            this.tableListView.UseCompatibleStateImageBehavior = false;
+            // 
+            // chairListView
+            // 
+            this.chairListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.chairListView.Location = new System.Drawing.Point(6, 6);
+            this.chairListView.Name = "chairListView";
+            this.chairListView.Size = new System.Drawing.Size(1540, 336);
+            this.chairListView.TabIndex = 0;
+            this.chairListView.UseCompatibleStateImageBehavior = false;
             // 
             // Form1
             // 
@@ -274,13 +325,13 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.Gainsboro;
             this.ClientSize = new System.Drawing.Size(1584, 861);
+            this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.btnClear);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.btnPrintSummary);
             this.Controls.Add(this.login);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.loadingLabel);
-            this.Controls.Add(this.listView);
             this.Controls.Add(this.btnPrint);
             this.Name = "Form1";
             this.Text = "Quick Ship Traveler    v1.1";
@@ -288,6 +339,9 @@
             this.Shown += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.tabControl1.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            this.tabPage2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -296,7 +350,6 @@
         #endregion
 
         private System.Windows.Forms.Button btnPrint;
-        private System.Windows.Forms.ListView listView;
         private System.Windows.Forms.Label loadingLabel;
         private System.Windows.Forms.CheckBox showToday;
         private System.Windows.Forms.GroupBox groupBox1;
@@ -315,6 +368,11 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.Button btnCreatedPrinted;
+        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.ListView tableListView;
+        private System.Windows.Forms.ListView chairListView;
     }
 }
 
