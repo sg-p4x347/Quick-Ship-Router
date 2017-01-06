@@ -93,6 +93,7 @@
     <Compile Include="Router.cs" />
     <Compile Include="Summary.cs" />
     <Compile Include="Table.cs" />
+    <Compile Include="TableManager.cs" />
     <Compile Include="Traveler.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>

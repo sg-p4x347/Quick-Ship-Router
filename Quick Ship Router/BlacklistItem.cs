@@ -25,6 +25,10 @@ namespace Quick_Ship_Router
             m_method = method;
             m_itemCode = itemCode;
         }
+        public bool StartsWith(string s)
+        {
+            return s.Substring(0, m_itemCode.Length) == m_itemCode;
+        }
         
         public static bool operator ==(string item,BlacklistItem blacklist)
         {

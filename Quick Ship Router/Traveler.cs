@@ -193,7 +193,7 @@ namespace Quick_Ship_Router
                         m_vector.TotalQuantity += componentItem.TotalQuantity;
                     }
                 }
-                else if (itemCode == "/LATB1" || itemCode == "/LATB2" || itemCode == "/LATB3")
+                else if ( itemCode == "/LATB1" || itemCode == "/LATB2" || itemCode == "/LATB3" || itemCode == "/LACH1" || itemCode == "/LACH2" || itemCode == "/LACH3")
                 {
                     // Assembly labor
                     if (m_assm == null)
@@ -246,25 +246,31 @@ namespace Quick_Ship_Router
                 {
                     // anything else
                     // check the blacklist
+                    bool blacklisted = false;
                     foreach (BlacklistItem blItem in m_blacklist )
                     {
-                        if (itemCode != blItem)
+                        if (blItem.StartsWith(itemCode))
                         {
-                            // check for existing item first
-                            bool foundItem = false;
-                            foreach (Item component in m_components)
+                            blacklisted = true;
+                            break;
+                        }
+                    }
+                    if (!blacklisted)
+                    {
+                        // check for existing item first
+                        bool foundItem = false;
+                        foreach (Item component in m_components)
+                        {
+                            if (component.ItemCode == itemCode)
                             {
-                                if (component.ItemCode == itemCode)
-                                {
-                                    foundItem = true;
-                                    component.TotalQuantity += componentItem.TotalQuantity;
-                                    break;
-                                }
+                                foundItem = true;
+                                component.TotalQuantity += componentItem.TotalQuantity;
+                                break;
                             }
-                            if (!foundItem)
-                            {
-                                m_components.Add(componentItem);
-                            }
+                        }
+                        if (!foundItem)
+                        {
+                            m_components.Add(componentItem);
                         }
                     }
                 }
@@ -391,6 +397,10 @@ namespace Quick_Ship_Router
             get
             {
                 return m_timeStamp;
+            }
+            set
+            {
+                m_timeStamp = value;
             }
         }
 

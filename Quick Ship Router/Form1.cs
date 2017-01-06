@@ -35,13 +35,9 @@ namespace Quick_Ship_Router
             workbooks = excelApp.Workbooks;
 
             PopulateCustomers();
-            PopulateProductLines();
             // connect to MAS
-            if (ConnectToData())
-            {
-                login.Enabled = false;
-                chairManager.MAS = MAS;
-            }
+                
+            InitializeManagers();
         }
         // Interface
         ~Form1()
@@ -62,7 +58,7 @@ namespace Quick_Ship_Router
         private List<Order> orders = new List<Order>();
         private List<Router> routers = new List<Router>();
         // Opens a connection to the MAS database
-        private bool ConnectToData()
+        private void ConnectToData()
         {
             loadingLabel.Text = "Logging in...";
             MAS = new OdbcConnection();
@@ -71,15 +67,33 @@ namespace Quick_Ship_Router
             try
             {
                 MAS.Open();
-                chairManager = new ChairManager(MAS, null, chairListView);
+                login.Enabled = false;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Failed to log in :(");
-                return false;
             }
             loadingLabel.Text = "";
-            return true;
+        }
+        private void InitializeManagers()
+        {
+            ConnectToData();
+
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "Kanban Blank Color Cross Reference.xlsx"),
+                0, false, 5, "", "", false, 2, "",
+                true, false, 0, true, false, false);
+            //var workbook = workbooks.Open(@"\\Mgfs01\share\common\Quick Ship Traveler\Kanban Blank Color Cross Reference.xlsx",
+            //    0, false, 5, "", "", false, 2, "",
+            //    true, false, 0, true, false, false);
+            var worksheets = workbook.Worksheets;
+            var crossRef = (Excel.Worksheet)worksheets.get_Item("Blank Cross Reference");
+            var colorRef = (Excel.Worksheet)worksheets.get_Item("Color Families");
+            var blankRef = (Excel.Worksheet)worksheets.get_Item("Blank Parent");
+            var boxRef = (Excel.Worksheet)worksheets.get_Item("Box Size");
+
+            tableManager = new TableManager(MAS, loadingLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
+            chairManager = new ChairManager(MAS, loadingLabel, progressBar, chairListView);
         }
         // Fill the customer list with customers
         private void PopulateCustomers()
@@ -93,31 +107,13 @@ namespace Quick_Ship_Router
                 customerList.Items.Add(customerNo, (customerNo == "AMAZOND" || customerNo == "WAYFAIR"));
             }
         }
-        private void PopulateProductLines()
-        {
-            productLineList.Items.Add("EDAT", true);
-            productLineList.Items.Add("EDXD", true);
-            productLineList.Items.Add("EDXT", true);
-            productLineList.Items.Add("EDCT", true);
-            productLineList.Items.Add("ECUS", false);
-            productLineList.Items.Add("EDBS", false);
-            productLineList.Items.Add("EDCM", false);
-            productLineList.Items.Add("EDDK", false);
-            productLineList.Items.Add("EDMC", false);
-            productLineList.Items.Add("EDSE", false);
-            productLineList.Items.Add("EDSS", false);
-            productLineList.Items.Add("EDST", false);
-            productLineList.Items.Add("EDXC", false);
-            productLineList.Items.Add("EDXS", false);
-            productLineList.Items.Add("EDXW", false);
-            productLineList.Items.Add("EMAS", false);
-        }
         private bool CreateTravelers(string specificOrderNo, bool invertCustomers)
         {
             // Import new orders
             if (ImportOrders(specificOrderNo,invertCustomers))
             {
                 // Create travelers
+                tableManager.CompileTravelers();
                 chairManager.CompileTravelers();
                 return true;
             }
@@ -125,343 +121,6 @@ namespace Quick_Ship_Router
         }
        
         
-        private List<Order> FilterByProduct(List<Order> orders)
-        {
-            loadingLabel.Text = "Filtering...";
-            string productLines = "";
-            for (int i = 0; i < productLineList.Items.Count; i++)
-            {
-                if (productLineList.GetItemCheckState(i) == CheckState.Checked)
-                {
-                    productLines += (productLines.Length > 0 ? "," : "") + "'" + productLineList.GetItemText(productLineList.Items[i]) + "'";
-                }
-            }
-            List<Order> filtered = new List<Order>();
-            foreach (Order order in orders) {
-                try
-                {
-                    OdbcCommand command = MAS.CreateCommand();
-                    command.CommandText = "SELECT ProductLine FROM CI_item WHERE ItemCode = '" + order.ItemCode + "' AND ProductLine IN (" + productLines + ")";
-                    OdbcDataReader reader = command.ExecuteReader(); 
-                    // read info
-                    if (reader.Read())
-                    {
-                        filtered.Add(order);
-                    }
-                } catch (Exception ex)
-                {
-                    MessageBox.Show("problem when filtering by product line: " + ex.Message);
-                }
-            }
-            return filtered;
-        }
-        private bool CreateRouters(bool printed,bool checkPrinted)
-        {
-            // Open excel
-            loadingLabel.Text = "Generating Travelers...";
-            //@"\\Mgfs01\share\common\Traveler Unraveler\Production traveler.xlsx"
-            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "Kanban Blank Color Cross Reference.xlsx"),
-                0, false, 5, "", "", false, 2, "",
-                true, false, 0, true, false, false);
-            //var workbook = workbooks.Open(@"\\Mgfs01\share\common\Quick Ship Traveler\Kanban Blank Color Cross Reference.xlsx",
-            //    0, false, 5, "", "", false, 2, "",
-            //    true, false, 0, true, false, false);
-            var worksheets = workbook.Worksheets;
-            var crossRef = (Excel.Worksheet)worksheets.get_Item("Blank Cross Reference");
-            var colorRef = (Excel.Worksheet)worksheets.get_Item("Color Families");
-            var blankRef = (Excel.Worksheet)worksheets.get_Item("Blank Parent");
-            var boxRef = (Excel.Worksheet)worksheets.get_Item("Box Size");
-            
-
-            // get the list of routers that have been printed
-            List<Router> printedRouters = new List<Router>();
-            if (checkPrinted || printed)
-            {
-                string line;
-                System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
-                loadingLabel.Text = "Checking printed travelers...";
-                while ((line = file.ReadLine()) != null && line != "")
-                {
-                    printedRouters.Add(new Router(line));
-                }
-                loadingLabel.Text = "";
-                file.Close();
-            }
-            routers.Clear();
-            if (printed)
-            {
-                foreach (Router router in printedRouters)
-                {
-                    router.GatherInfo(MAS, crossRef, colorRef, boxRef);
-                }
-                routers = printedRouters;
-            }
-            else
-            {
-                loadingLabel.Text = "Compiling travelers...";
-                // compile the routers
-                foreach (Order order in orders)
-                {
-                    if (checkPrinted)
-                    {
-                        // do not include this order if it has been printed
-                        bool foundMatch = false;
-                        foreach (Router printedRouter in printedRouters)
-                        {
-                            if (printedRouter.Orders.FindIndex(j => j.SalesOrderNo == order.SalesOrderNo) >= 0)
-                            {
-                                foundMatch = true;
-                                break;
-                            }
-                        }
-                        if (foundMatch) continue;
-                    }
-                    // Make a unique router for each order, while combining common parts from different models into single router
-                    bool foundBill = false;
-                    // search for existing traveler
-                    if (combineOrders.Checked)
-                    {
-                        foreach (Router router in routers)
-                        {
-                            if (router.Item.BillNo == order.ItemCode)
-                            {
-                                foundBill = true;
-                                router.Printed = printed;
-                                // add to the quantity of items
-                                router.Quantity += order.QuantityOrdered;
-                                // add to the order list
-                                router.Orders.Add(order);
-                            }
-                        }
-                    }
-                    // create a new traveler for the part
-                    if (!foundBill)
-                    {
-                        // create a new traveler from the new item
-                        Router newRouter = new Router(order.ItemCode, order.QuantityOrdered, order.ShipVia, MAS, crossRef, colorRef, boxRef);
-                        newRouter.Printed = printed;
-                        // add to the order list
-                        newRouter.Orders.Add(order);
-                        // add the new router to the list
-                        routers.Add(newRouter);
-                    }
-                }
-            }
-            FinalizeRouters(crossRef, colorRef, blankRef, boxRef);
-            // Clean up excel
-            if (crossRef != null) Marshal.ReleaseComObject(crossRef);
-            if (colorRef != null) Marshal.ReleaseComObject(colorRef);
-            if (blankRef != null) Marshal.ReleaseComObject(blankRef);
-            if (boxRef != null) Marshal.ReleaseComObject(boxRef);
-            if (worksheets != null) Marshal.ReleaseComObject(worksheets);
-            workbook.Close(false);
-            if (workbook != null) Marshal.ReleaseComObject(workbook);
-
-            DisplayRouters();
-            return true;
-        }
-        private void FinalizeRouters(Excel.Worksheet crossRef, Excel.Worksheet colorRef, Excel.Worksheet blankRef, Excel.Worksheet boxRef)
-        {
-            // Loop through the routers to total up the final quantities of materials needed
-            List<Router> remove = new List<Router>();
-            foreach (Router router in routers)
-            {
-                //---------------------------------------------------------------
-                // check inventory to see how many actually need to be produced.
-                //---------------------------------------------------------------
-                try
-                {
-                    OdbcCommand command = MAS.CreateCommand();
-                    command.CommandText = "SELECT QuantityOnSalesOrder, QuantityOnHand FROM IM_ItemWarehouse WHERE ItemCode = '" + router.Item.BillNo + "'";
-                    OdbcDataReader reader = command.ExecuteReader();
-                    if (reader.Read())
-                    {
-                        int available = Convert.ToInt32(reader.GetValue(1)) - Convert.ToInt32(reader.GetValue(0));
-                        if (available >= 0)
-                        {
-                            // remove this router, there are parts already in inventory
-                            router.Quantity = 0;
-                            remove.Add(router);
-                        }
-                        else
-                        {
-                            // adjust the quantity that need to be produced
-                            router.Quantity = Math.Min(-available, router.Quantity);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("An error occured when accessing inventory: " + ex.Message);
-                }
-                // calculate total hardware
-                router.FindHardware(router.Item);
-                // calculate total material sqft
-                router.Material.QuantityPerBill *= router.Quantity;
-                //---------------------------------------------------------------
-                // calculate how much of each box size
-                //---------------------------------------------------------------
-                for (int row = 2; row < 78; row++)
-                {
-
-                    var range = crossRef.get_Range("B" + row.ToString(), "F" + row.ToString());
-                    // find the correct model number in the spreadsheet
-                    if (range.Item[1].Value2 == router.ShapeNo)
-                    {
-                        foreach (Order order in router.Orders)
-                        {
-                            // Get box information
-                            if (order.ShipVia != "" && (order.ShipVia.ToUpper().IndexOf("FEDEX") != -1 || order.ShipVia.ToUpper().IndexOf("UPS") != -1))
-                            {
-                                var boxRange = boxRef.get_Range("C" + (row + 1), "H" + (row + 1)); // Super Pack
-                                router.SupPack = (boxRange.Item[1].Value2 != null ? boxRange.Item[5].Value2 + " ( " + boxRange.Item[1].Value2 + " x " + boxRange.Item[2].Value2 + " x " + boxRange.Item[3].Value2 + " )" + (boxRange.Item[4].Value2 != null ? boxRange.Item[4].Value2 + " pads" : "") : "Missing information") + (boxRange.Item[6].Value2 != null ? " " + boxRange.Item[6].Value2 : "");
-                                router.SupPackQty += order.QuantityOrdered;
-                                if (boxRange != null) Marshal.ReleaseComObject(boxRange);
-                            }
-                            else
-                            {
-                                var boxRange = boxRef.get_Range("I" + (row + 1), "N" + (row + 1)); // Regular Pack
-                                router.RegPack = (boxRange.Item[1].Value2 != null ? boxRange.Item[5].Value2 + " ( " + boxRange.Item[1].Value2 + " x " + boxRange.Item[2].Value2 + " x " + boxRange.Item[3].Value2 + " )" : "Missing information") + (boxRange.Item[6].Value2 != null ? " " + boxRange.Item[6].Value2 : "");
-                                router.RegPackQty += order.QuantityOrdered;
-                                if (boxRange != null) Marshal.ReleaseComObject(boxRange);
-                            }
-                        }
-                    }
-                    if (range != null) Marshal.ReleaseComObject(range);
-                }
-                //--------------------------------------
-                // Calculate how many will be left over + Blank Size
-                //--------------------------------------
-                for (int row = 2; row < 78; row++)
-                {
-                    var blankRange = blankRef.get_Range("A" + row.ToString(), "H" + row.ToString());
-                    // find the correct model number in the spreadsheet
-                    if (blankRange.Item[1].Value2 == router.ShapeNo)
-                    {
-                        // set the blank size
-                        List<string> exceptionColors = new List<string> { "60", "50", "49" };
-                        if ((router.ShapeNo == "MG2247" || router.ShapeNo == "38-2247") && exceptionColors.IndexOf(router.ColorNo) != -1)
-                        {
-                            // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
-                            router.BlankSize = "(920x1532)";
-                            router.PartsPerBlank = 1;
-                        }
-                        else
-                        {
-                            // All normal
-                            if (Convert.ToInt32(blankRange.Item[7].Value2) > 0)
-                            {
-                                router.BlankSize = "(" + blankRange.Item[8].Value2 + ")";
-                                router.PartsPerBlank = Convert.ToInt32(blankRange.Item[7].Value2);
-                            } else
-                            {
-                                if (blankRange.Item[5].Value2 != "-99999")
-                                {
-                                    router.BlankSize = "(" + blankRange.Item[5].Value2 + ") ~sheet";
-                                } else
-                                {
-                                    router.BlankSize = "No Blank";
-                                }
-                            }
-                            
-                        }
-                        // calculate production numbers
-                        if (router.PartsPerBlank < 0) router.PartsPerBlank = 0;
-                        decimal tablesPerBlank = Convert.ToDecimal(blankRange.Item[7].Value2);
-                        if (tablesPerBlank <= 0) tablesPerBlank = 1;
-                        router.BlankQuantity = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(router.Quantity) / tablesPerBlank));
-                        int partsProduced = router.BlankQuantity * Convert.ToInt32(tablesPerBlank);
-                        router.LeftoverParts = partsProduced - router.Quantity;
-                        break;
-                    }
-                    if (blankRange != null) Marshal.ReleaseComObject(blankRange);
-                }
-                // subtract the inventory parts from the box quantity
-                // router.RegPackQty = Math.Max(0, router.RegPackQty - ((router.RegPackQty + router.SupPackQty) - router.Quantity));
-            }
-            // remove the removed routers
-            foreach (Router router in remove)
-            {
-                // check to see if there are super-packed items, if so, don't remove this traveler
-                if (router.SupPackQty == 0)
-                {
-                    routers.Remove(router);
-                }
-            }
-        }
-        private void DisplayRouters()
-        {
-            loadingLabel.Text = "Travelers";
-            // display the results to the tableListView
-            tableListView.Clear();
-            // Set to details view.
-            tableListView.View = View.Details;
-
-            // production info
-            tableListView.Columns.Add("Part No.", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("ID", 50, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Printed", 50, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Ordered", 75, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Need to Produce", 75, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Blanks", 75, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Leftover", 75, HorizontalAlignment.Left);
-            // order info
-            tableListView.Columns.Add("Ship date(s)", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Customer(s)", 200, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Order No.(s)", 200, HorizontalAlignment.Left);
-            // Pack info
-            tableListView.Columns.Add("Reg pack", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Sup pack", 100, HorizontalAlignment.Left);
-            // Traveler info
-            tableListView.Columns.Add("Drawing No.", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Blank No.", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Blank Size", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Heian/Weeke Labor", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Vector Labor", 100, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Color", 200, HorizontalAlignment.Left);
-            tableListView.Columns.Add("Hardware", 200, HorizontalAlignment.Left);
-            
-            
-            foreach (Router router in routers)
-            {
-                string dateList = "";
-                string customerList = "";
-                string orderList = "";
-                int totalOrdered = 0;
-                int i = 0;
-                foreach (Order order in router.Orders)
-                {
-                    totalOrdered += order.QuantityOrdered;
-                    dateList += (i == 0 ? "" : ", ") + order.OrderDate.ToString("MM/dd/yyyy");
-                    customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                    orderList += (i == 0 ? "" : ", ") + order.SalesOrderNo;
-                    i++;
-                }
-                string[] row = {
-                    router.Item.BillNo,router.ID.ToString("D6"),
-                    (router.Printed ? "Yes" : "No"),
-                    totalOrdered.ToString(),
-                    router.Quantity.ToString(),
-                    router.BlankQuantity.ToString(),
-                    router.LeftoverParts.ToString(),
-                    dateList,
-                    customerList,
-                    orderList,
-                    router.RegPackQty.ToString(),
-                    router.SupPackQty.ToString(),
-                    router.Item.DrawingNo,
-                    router.BlankNo,
-                    router.BlankSize,
-                    router.Cnc.QuantityPerBill.ToString() + " " + router.Cnc.Unit,
-                    router.Vector.QuantityPerBill.ToString() + " " + router.Vector.Unit,
-                    router.Color,router.Hardware,
-                };
-                ListViewItem tableListViewItem = new ListViewItem(row);
-                tableListViewItem.Checked = true;
-                tableListView.Items.Add(tableListViewItem);
-            }
-        }
         //======================
         // Open Order
         //======================
@@ -560,7 +219,7 @@ namespace Quick_Ship_Router
         //======================
         // Tables
         //======================
-        private ChairManager tableManager = new ChairManager();
+        private TableManager tableManager = new TableManager();
         //======================
         // Chairs
         //======================
@@ -568,6 +227,7 @@ namespace Quick_Ship_Router
         //======================
         // Events
         //======================
+        // Print
         private void btnPrint_Click(object sender, EventArgs e)
         {
             loadingLabel.Text = "Printing Travelers...";
@@ -579,224 +239,229 @@ namespace Quick_Ship_Router
                 0, false, 5, "", "", false, 2, "",
                 true, false, 0, true, false, false);
             var worksheets = workbook.Worksheets;
-            var templateSheet = (Excel.Worksheet)worksheets.get_Item("Table");
-            // open printed log file
-            System.IO.StreamWriter file = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
+
+            tableManager.PrintTravelers(worksheets);
+            chairManager.PrintTravelers(worksheets);
             
             
-            // create the output workbook
-            int currentSheet = 2;
-            for (int itemIndex = 0; itemIndex < tableListView.Items.Count; itemIndex++)
-            {
-                if (tableListView.Items[itemIndex].Checked)
-                {
-                    Router router = routers[itemIndex];
-                    templateSheet.Copy(Type.Missing, workbook.Worksheets[currentSheet - 1]);
+            //// create the output workbook
+            //int currentSheet = 2;
+            //for (int itemIndex = 0; itemIndex < tableListView.Items.Count; itemIndex++)
+            //{
+            //    if (tableListView.Items[itemIndex].Checked)
+            //    {
+            //        Router router = routers[itemIndex];
+            //        templateSheet.Copy(Type.Missing, workbook.Worksheets[currentSheet - 1]);
 
-                    Excel.Worksheet outputSheet = workbook.Worksheets[currentSheet];
+            //        Excel.Worksheet outputSheet = workbook.Worksheets[currentSheet];
 
-                    // Sales Orders
-                    string customerList = "";
-                    string orderList = "";
-                    int i = 0;
-                    foreach (Order order in router.Orders)
-                    {
-                        customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                        orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
-                        i++;
-                    }
-                    //#####################
-                    // Production Traveler
-                    //#####################
-                    Excel.Range range;
-                    int row = 1;
-                    // Documentation
-                    range = outputSheet.get_Range("A" + row, "A" + row);
-                    range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
-                    range.get_Characters(7, 15).Font.FontStyle = "bold";
-                    range.get_Characters(7, 15).Font.Size = 20;
-                    row++;
-                    // Part
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1] = router.Item.BillNo;
-                    range.Item[2] = router.Quantity;
-                    row++;
-                    // Description
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.Item.BillDesc;
-                    row++;
-                    // Drawing
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.Item.DrawingNo;
-                    row++;
-                    // Sales Orders
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = orderList;
-                    row++;
-                    // Customers
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = customerList;
-                    row++;
-                    // Date printed
-                    router.TimeStamp = DateTime.Now.ToString("MM/dd/yyyy   hh:mm tt");
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.TimeStamp;
-                    row++;
-                    // Blank
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.BlankNo + "   " + router.BlankSize + " (" + router.PartsPerBlank + " per blank)";
-                    range.Item[2].Value2 = router.BlankQuantity;
-                    row++;
-                    // Leftover
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[2].Value2 = router.LeftoverParts;
-                    row++;
-                    // Parent material
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.Material.ItemCode;
-                    range.Item[2].Value2 = router.Material.QuantityPerBill + " " + router.Material.Unit;
-                    row++;
-                    // Color
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.Color;
-                    row++;
-                    // Heien/Weeke rate
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.Cnc.QuantityPerBill + " " + router.Cnc.Unit;
-                    range.Item[2].Value2 = router.Cnc.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-                    row++;
-                    // Vector rate
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.Vector.QuantityPerBill + " " + router.Vector.Unit;
-                    range.Item[2].Value2 = router.Vector.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-                    row++;
-                    // Pack rate
-                    if (router.Assm != null)
-                    {
-                        range = outputSheet.get_Range("B" + row, "C" + row);
-                        range.Item[1].Value2 = router.Assm.QuantityPerBill + " " + router.Assm.Unit;
-                        range.Item[2].Value2 = router.Assm.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-                    }
-                    row++;
-                    // Regular pack
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
-                    range.Item[2].Value2 = router.RegPackQty;
-                    row++;
-                    // Super pack
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.SupPack;
-                    range.Item[2].Value2 = router.SupPackQty;
-                    row++;
-                    // Hardware
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.Hardware;
-                    row++;
+            //        // Sales Orders
+            //        string customerList = "";
+            //        string orderList = "";
+            //        int i = 0;
+            //        foreach (Order order in router.Orders)
+            //        {
+            //            customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
+            //            orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+            //            i++;
+            //        }
+            //        //#####################
+            //        // Production Traveler
+            //        //#####################
+            //        Excel.Range range;
+            //        int row = 1;
+            //        // Documentation
+            //        range = outputSheet.get_Range("A" + row, "A" + row);
+            //        range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
+            //        range.get_Characters(7, 15).Font.FontStyle = "bold";
+            //        range.get_Characters(7, 15).Font.Size = 20;
+            //        row++;
+            //        // Part
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1] = router.Item.BillNo;
+            //        range.Item[2] = router.Quantity;
+            //        row++;
+            //        // Description
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.Item.BillDesc;
+            //        row++;
+            //        // Drawing
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.Item.DrawingNo;
+            //        row++;
+            //        // Sales Orders
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = orderList;
+            //        row++;
+            //        // Customers
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = customerList;
+            //        row++;
+            //        // Date printed
+            //        router.TimeStamp = DateTime.Now.ToString("MM/dd/yyyy   hh:mm tt");
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.TimeStamp;
+            //        row++;
+            //        // Blank
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.BlankNo + "   " + router.BlankSize + " (" + router.PartsPerBlank + " per blank)";
+            //        range.Item[2].Value2 = router.BlankQuantity;
+            //        row++;
+            //        // Leftover
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[2].Value2 = router.LeftoverParts;
+            //        row++;
+            //        // Parent material
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.Material.ItemCode;
+            //        range.Item[2].Value2 = router.Material.QuantityPerBill + " " + router.Material.Unit;
+            //        row++;
+            //        // Color
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.Color;
+            //        row++;
+            //        // Heien/Weeke rate
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.Cnc.QuantityPerBill + " " + router.Cnc.Unit;
+            //        range.Item[2].Value2 = router.Cnc.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
+            //        row++;
+            //        // Vector rate
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.Vector.QuantityPerBill + " " + router.Vector.Unit;
+            //        range.Item[2].Value2 = router.Vector.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
+            //        row++;
+            //        // Pack rate
+            //        if (router.Assm != null)
+            //        {
+            //            range = outputSheet.get_Range("B" + row, "C" + row);
+            //            range.Item[1].Value2 = router.Assm.QuantityPerBill + " " + router.Assm.Unit;
+            //            range.Item[2].Value2 = router.Assm.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
+            //        }
+            //        row++;
+            //        // Regular pack
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
+            //        range.Item[2].Value2 = router.RegPackQty;
+            //        row++;
+            //        // Super pack
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.SupPack;
+            //        range.Item[2].Value2 = router.SupPackQty;
+            //        row++;
+            //        // Hardware
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.Hardware;
+            //        row++;
 
-                    //#####################
-                    // Box Construction
-                    //#####################
+            //        //#####################
+            //        // Box Construction
+            //        //#####################
 
-                    row ++;
-                    // Documentation
-                    range = outputSheet.get_Range("A" + row, "A" + row);
-                    range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
-                    range.get_Characters(7, 15).Font.FontStyle = "bold";
-                    range.get_Characters(7, 15).Font.Size = 20;
-                    row++;
-                    // Part
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1] = router.Item.BillNo;
-                    range.Item[2] = router.Quantity;
-                    row++;
-                    // Description
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.Item.BillDesc;
-                    row++;
-                    // Regular pack
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
-                    range.Item[2].Value2 = router.RegPackQty;
-                    row++;
-                    // Super pack
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = router.SupPack;
-                    range.Item[2].Value2 = router.SupPackQty;
-                    row++;
-                    // Box rate
-                    if (router.Box != null)
-                    {
-                        range = outputSheet.get_Range("B" + row, "C" + row);
-                        range.Item[1].Value2 = router.Box.QuantityPerBill + " " + router.Box.Unit;
-                        range.Item[2].Value2 = router.Box.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-                    }
-                    row++;
-                    // Sales Orders
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = orderList;
-                    row++;
-                    // Customers
-                    range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = customerList;
-                    row++;
-                    // Date printed
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = router.TimeStamp;
-                    row++;
-                    try
-                    {
-                        // log that this these orders have been printed
+            //        row ++;
+            //        // Documentation
+            //        range = outputSheet.get_Range("A" + row, "A" + row);
+            //        range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
+            //        range.get_Characters(7, 15).Font.FontStyle = "bold";
+            //        range.get_Characters(7, 15).Font.Size = 20;
+            //        row++;
+            //        // Part
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1] = router.Item.BillNo;
+            //        range.Item[2] = router.Quantity;
+            //        row++;
+            //        // Description
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.Item.BillDesc;
+            //        row++;
+            //        // Regular pack
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
+            //        range.Item[2].Value2 = router.RegPackQty;
+            //        row++;
+            //        // Super pack
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = router.SupPack;
+            //        range.Item[2].Value2 = router.SupPackQty;
+            //        row++;
+            //        // Box rate
+            //        if (router.Box != null)
+            //        {
+            //            range = outputSheet.get_Range("B" + row, "C" + row);
+            //            range.Item[1].Value2 = router.Box.QuantityPerBill + " " + router.Box.Unit;
+            //            range.Item[2].Value2 = router.Box.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
+            //        }
+            //        row++;
+            //        // Sales Orders
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = orderList;
+            //        row++;
+            //        // Customers
+            //        range = outputSheet.get_Range("B" + row, "C" + row);
+            //        range.Item[1].Value2 = customerList;
+            //        row++;
+            //        // Date printed
+            //        range = outputSheet.get_Range("B" + row, "B" + row);
+            //        range.Value2 = router.TimeStamp;
+            //        row++;
+            //        try
+            //        {
+            //            // log that this these orders have been printed
 
-                        //foreach (Order order in router.Orders)
-                        //{
-                        //    file.WriteLine(order.SalesOrderNo);
-                        //    file.Flush();
-                        //}
+            //            //foreach (Order order in router.Orders)
+            //            //{
+            //            //    file.WriteLine(order.SalesOrderNo);
+            //            //    file.Flush();
+            //            //}
 
 
-                        //##### Print the Cover sheet #######
-                        outputSheet.PrintOut(
-                            Type.Missing, Type.Missing, Type.Missing, Type.Missing,
-                            Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-                        //###################################
+            //            //##### Print the Cover sheet #######
+            //            outputSheet.PrintOut(
+            //                Type.Missing, Type.Missing, Type.Missing, Type.Missing,
+            //                Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            //            //###################################
 
-                        // successfully printed, so we should log in the printed.json file
-                        if (!router.Copy)
-                        {
-                            file.Write(router.Export());
-                            file.Flush();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("A problem occured when printing: " + ex.Message);
-                    }
-                }
-            }
-            file.Close();
-            loadingLabel.Text = "Travelers";
+            //            // successfully printed, so we should log in the printed.json file
+            //            if (!router.Copy)
+            //            {
+            //                file.Write(router.Export());
+            //                file.Flush();
+            //            }
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            MessageBox.Show("A problem occured when printing: " + ex.Message);
+            //        }
+            //    }
+            //}
+            //file.Close();
+            //loadingLabel.Text = "Travelers";
         }
+        // Print summary
+        private void btnPrintSummary_Click(object sender, EventArgs e)
+        {
+            Summary summary = new Summary(tableManager.Travelers, chairManager.Travelers);
+            summary.Print(workbooks);
+        }
+        // Create Travelers (from selected customers)
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
             tableListView.Clear();
             CreateTravelers("",false);
         }
-
+        // Create Travelers(from unselected customers)
+        private void btnInvertCustomers_Click(object sender, EventArgs e)
+        {
+            tableListView.Clear();
+            CreateTravelers("", true);
+        }
+        // Login to MAS
         private void login_Click(object sender, EventArgs e)
         {
-            // connect to MAS
-            if (ConnectToData())
-            {
-                login.Enabled = false;
-            }
+            // connect to MAS and initialize managers
+            InitializeManagers();
         }
-
-        private void btnPrintSummary_Click(object sender, EventArgs e)
-        {
-            Summary summary = new Summary(orders, routers);
-            summary.Print(workbooks);
-        }
-
+        
+        // Add specific order
         private void btnCreateSpecificOrder_Click(object sender, EventArgs e)
         {
             // Import new orders
@@ -810,22 +475,17 @@ namespace Quick_Ship_Router
             //    }
             //}
         }
-
-        private void btnInvertCustomers_Click(object sender, EventArgs e)
-        {
-            tableListView.Clear();
-            CreateTravelers("", true);
-        }
-
+        // Clear Travelers
         private void btnClear_Click(object sender, EventArgs e)
         {
             tableListView.Clear();
+            chairListView.Clear();
             orders.Clear();
         }
         // Create only previously printed travelers
         private void btnCreatedPrinted_Click(object sender, EventArgs e)
         {
-            CreateRouters(true,false);
+            //CreateRouters(true,false);
         }
     }
 }

@@ -19,9 +19,10 @@ namespace Quick_Ship_Router
     class ChairManager
     {
         public ChairManager() { }
-        public ChairManager(OdbcConnection mas, Excel.Worksheet travelerTemplate, ListView listview) {
+        public ChairManager(OdbcConnection mas, Label infoLabel, ProgressBar progressBar, ListView listview) {
             m_MAS = mas;
-            m_travelerTemplate = travelerTemplate;
+            m_infoLabel = infoLabel;
+            m_progressBar = progressBar;
             m_chairListView = listview;
         }
         //=======================
@@ -32,7 +33,7 @@ namespace Quick_Ship_Router
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
             m_travelers.Clear();
-            // get the list of routers that have been printed
+            // get the list of travelers that have been printed
             List<Traveler> printedTravelers = new List<Traveler>();
             //==========================================
             // Remove any orders that have been printed
@@ -57,11 +58,11 @@ namespace Quick_Ship_Router
             }
             file.Close();
             //==========================================
-            // compile the routers
+            // compile the travelers
             //==========================================
             foreach (Order order in m_orders)
             {
-                // Make a unique router for each order, while combining common parts from different models into single router
+                // Make a unique traveler for each order, while combining common parts from different models into single traveler
                 bool foundBill = false;
                 // search for existing traveler
                 foreach (Chair traveler in m_travelers)
@@ -82,7 +83,7 @@ namespace Quick_Ship_Router
                     Chair newTraveler = new Chair(order.ItemCode, order.QuantityOrdered, MAS);
                     // add to the order list
                     newTraveler.Orders.Add(order);
-                    // add the new router to the list
+                    // add the new traveler to the list
                     m_travelers.Add(newTraveler);
                 }
             }
@@ -91,14 +92,19 @@ namespace Quick_Ship_Router
         }
         private void ImportInformation()
         {
+            m_infoLabel.Text = "Gathering Chair Info";
+            m_progressBar.Visible = true;
+            int index = 0;
             foreach (Chair traveler in m_travelers)
             {
-                
+                m_progressBar.Value = Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100);
                 traveler.CheckInventory(MAS);
                 // update and total the final parts
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
             }
+            m_progressBar.Visible = false;
+            m_infoLabel.Text = "";
         }
         public void DisplayTravelers()
         {
@@ -150,18 +156,193 @@ namespace Quick_Ship_Router
         //=======================
         // Printing
         //=======================
-        public void PrintTravelers()
+        public void PrintTravelers(Excel.Sheets worksheets)
         {
+            m_infoLabel.Text = "Printing Chair Travelers...";
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            // open printed log file
+            System.IO.StreamWriter file = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
 
+            // create the output workbook
+            for (int itemIndex = 0; itemIndex < m_chairListView.Items.Count; itemIndex++)
+            {
+                if (m_chairListView.Items[itemIndex].Checked)
+                {
+                    Chair traveler = m_travelers[itemIndex];
+
+                    // copy the sheet
+                    worksheets.get_Item("Chair").Copy(Type.Missing, worksheets[worksheets.Count]);
+                    Excel.Worksheet outputSheet = worksheets[worksheets.Count];
+
+                    // Sales Orders
+                    string customerList = "";
+                    string orderList = "";
+                    int i = 0;
+                    foreach (Order order in traveler.Orders)
+                    {
+                        customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
+                        orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+                        i++;
+                    }
+                    //#####################
+                    // Production Traveler
+                    //#####################
+                    Excel.Range range;
+                    int row = 1;
+                    // Documentation
+                    range = outputSheet.get_Range("A" + row, "A" + row);
+                    range.Value2 = traveler.ID.ToString("D6") + (traveler.Printed ? " COPY" : "");
+                    range.get_Characters(7, 15).Font.FontStyle = "bold";
+                    range.get_Characters(7, 15).Font.Size = 20;
+                    row++;
+                    // Part -----------------------------------------------------------------
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1] = traveler.Part.BillNo;
+                    range.Item[2] = traveler.Quantity;
+                    row++;
+                    // Description
+                    range = outputSheet.get_Range("B" + row, "B" + row);
+                    range.Value2 = traveler.Part.BillDesc;
+                    row++;
+                    // Color
+                    range = outputSheet.get_Range("B" + row, "B" + row);
+                    range.Value2 = traveler.Color;
+                    row++;
+                    // Sales Orders -----------------------------------------------------------------
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = orderList;
+                    row++;
+                    // Customers
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = customerList;
+                    row++;
+                    // Date printed
+                    traveler.TimeStamp = DateTime.Now.ToString("MM/dd/yyyy   hh:mm tt");
+                    range = outputSheet.get_Range("B" + row, "B" + row);
+                    range.Value2 = traveler.TimeStamp;
+                    row++;
+                    // Assembly -----------------------------------------------------------------
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    if (traveler.Assm != null)
+                    {
+                        range.Item[1].Value2 = traveler.Assm.QuantityPerBill + " " + traveler.Assm.Unit;
+                        range.Item[2].Value2 = traveler.Assm.TotalQuantity + " " + traveler.Assm.Unit;
+                    }
+                    else
+                    {
+                        range.Item[1].Value2 = "N/A";
+                    }
+                    row++;
+                    // Regular pack
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
+                    range.Item[2].Value2 = traveler.RegPackQty;
+                    row+=2;
+                    // Components ---------------------------------------------------------------
+                    int startRow = row;
+                    foreach (Item component in traveler.Components)
+                    {
+                        range = outputSheet.get_Range("A" + row, "C" + row);
+                        range.Item[1].Value2 = component.ItemCode;
+                        range.Item[2].Value2 = component.ItemCodeDesc;
+                        range.Item[3].Value2 = component.TotalQuantity.ToString();
+                        row++;
+                    }
+                    range = outputSheet.get_Range("A" + startRow, "C" + (row-1));
+                    Excel.Borders borders = range.Borders;
+                    borders[Excel.XlBordersIndex.xlInsideHorizontal].LineStyle = Excel.XlLineStyle.xlContinuous;
+                    borders[Excel.XlBordersIndex.xlInsideVertical].LineStyle = Excel.XlLineStyle.xlContinuous;
+                    borders[Excel.XlBordersIndex.xlEdgeLeft].LineStyle = Excel.XlLineStyle.xlContinuous;
+                    borders[Excel.XlBordersIndex.xlEdgeBottom].LineStyle = Excel.XlLineStyle.xlContinuous;
+                    borders[Excel.XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlContinuous;
+
+                    //#####################
+                    // Box Construction
+                    //#####################
+
+                    row = 22;
+                    // Documentation
+                    range = outputSheet.get_Range("A" + row, "A" + row);
+                    range.Value2 = traveler.ID.ToString("D6") + (traveler.Printed ? " COPY" : "");
+                    range.get_Characters(7, 15).Font.FontStyle = "bold";
+                    range.get_Characters(7, 15).Font.Size = 20;
+                    row++;
+                    // Part
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1] = traveler.Part.BillNo;
+                    range.Item[2] = traveler.Quantity;
+                    row++;
+                    // Description
+                    range = outputSheet.get_Range("B" + row, "B" + row);
+                    range.Value2 = traveler.Part.BillDesc;
+                    row++;
+                    // Regular pack
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
+                    range.Item[2].Value2 = traveler.RegPackQty;
+                    row++;
+                    // Box rate
+                    if (traveler.Box != null)
+                    {
+                        range = outputSheet.get_Range("B" + row, "C" + row);
+                        range.Item[1].Value2 = traveler.Box.QuantityPerBill + " " + traveler.Box.Unit;
+                        range.Item[2].Value2 = traveler.Box.QuantityPerBill * traveler.Quantity + " " + traveler.Vector.Unit;
+                    }
+                    row++;
+                    // Sales Orders
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = orderList;
+                    row++;
+                    // Customers
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = customerList;
+                    row++;
+                    // Date printed
+                    range = outputSheet.get_Range("B" + row, "B" + row);
+                    range.Value2 = traveler.TimeStamp;
+                    row++;
+                    try
+                    {
+                        // log that this these orders have been printed
+
+                        //foreach (Order order in traveler.Orders)
+                        //{
+                        //    file.WriteLine(order.SalesOrderNo);
+                        //    file.Flush();
+                        //}
+
+
+                        //##### Print the Cover sheet #######
+                        outputSheet.PrintOut(
+                            Type.Missing, Type.Missing, Type.Missing, Type.Missing,
+                            Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+                        //###################################
+
+                        // successfully printed, so it should be logged in the printed.json file
+                        if (!traveler.Printed)
+                        {
+                            file.Write(traveler.Export());
+                            file.Flush();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("A problem occured when printing: " + ex.Message);
+                    }
+                }
+            }
+            file.Close();
+            m_infoLabel.Text = "";
         }
         //=======================
         // Properties
         //=======================
-        private Excel.Worksheet m_travelerTemplate;
         private ListView m_chairListView = null;
+        private Label m_infoLabel = null;
+        private ProgressBar m_progressBar = null;
         private List<Order> m_orders = new List<Order>();
         private List<Chair> m_travelers = new List<Chair>();
-        private OdbcConnection m_MAS = new OdbcConnection();
+        private OdbcConnection m_MAS = null;
 
         internal List<Order> Orders
         {

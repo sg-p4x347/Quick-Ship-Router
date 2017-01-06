@@ -70,41 +70,41 @@ namespace Quick_Ship_Router
             public List<string> orderDates;
             public List<string> customers;
         }
-        public Summary(List<Order> orders, List<Router> routers)
+        public Summary(List<Table> tables, List<Chair> chairs)
         {
             // date
             date = DateTime.Today.ToString("MM/dd/yyyy");
-            foreach (Router router in routers)
+            foreach (Table table in tables)
             {
-                totalParts += router.Quantity;
+                totalTables += table.Quantity;
                 totalTravelers++;
                 // create the summary item
-                SummaryItem item = new SummaryItem(router.ID.ToString("D6"), router.Item.BillNo, router.Quantity, router.Item.BillDesc);
-                foreach (Order order in router.Orders)
-                {
-                    item.orderNums.Add(order.SalesOrderNo);
-                    item.orderDates.Add(order.OrderDate.ToString("MM/dd/yyyy"));
-                    item.customers.Add(order.CustomerNo);
-                }
-                items.Add(item);
+                CreateSummaryItem(table);
                 // tally blanks
                 bool foundBlank = false;
                 for (int i = 0; i < blanks.Count; i++)
                 {
-                    if (blanks[i].size == router.BlankNo || blanks[i].size == router.BlankSize)
+                    if (blanks[i].size == table.BlankNo || blanks[i].size == table.BlankSize)
                     {
-                        blanks[i].quantity += router.BlankQuantity;
+                        blanks[i].quantity += table.BlankQuantity;
                         foundBlank = true;
                     }
                 }
                 if (!foundBlank)
                 {
-                    blanks.Add(new BlankItem(router.BlankNo != "" ? router.BlankNo : router.BlankSize, router.BlankQuantity));
+                    blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : table.BlankSize, table.BlankQuantity));
                 }
                 // total work
-                totalCNC += router.Cnc.QuantityPerBill;
-                totalVector += router.Vector.QuantityPerBill;
-                totalPack += router.Assm.QuantityPerBill;
+                totalCNC += table.Cnc.QuantityPerBill;
+                totalVector += table.Vector.QuantityPerBill;
+                totalPack += table.Assm.QuantityPerBill;
+            }
+            foreach (Chair chair in chairs)
+            {
+                totalChairs += chair.Quantity;
+                totalTravelers++;
+                // create the summary item
+                CreateSummaryItem(chair);
             }
 
             //####################
@@ -140,6 +140,17 @@ namespace Quick_Ship_Router
             //    items.Add(new SummaryItem(order.SalesOrderNo, order.QuantityOrdered, order.ItemCode, "", "", order.OrderDate.ToString("MM/dd/yyyy"), order.CustomerNo));
             //}
         }
+        private void CreateSummaryItem(Traveler traveler)
+        {
+            SummaryItem item = new SummaryItem(traveler.ID.ToString("D6"), traveler.Part.BillNo, traveler.Quantity, traveler.Part.BillDesc);
+            foreach (Order order in traveler.Orders)
+            {
+                item.orderNums.Add(order.SalesOrderNo);
+                item.orderDates.Add(order.OrderDate.ToString("MM/dd/yyyy"));
+                item.customers.Add(order.CustomerNo);
+            }
+            items.Add(item);
+        }
         public void Print(Excel.Workbooks workbooks)
         {
             // Open the Summary template for printing
@@ -158,7 +169,7 @@ namespace Quick_Ship_Router
             travelerTotal.Value2 = totalTravelers;
             Marshal.ReleaseComObject(travelerTotal);
             Excel.Range partTotal = summarySheet.get_Range("C2", "C2");
-            partTotal.Value2 = totalParts;
+            partTotal.Value2 = totalTables;
             Marshal.ReleaseComObject(partTotal);
             // print items
             int row = 4;
@@ -226,7 +237,8 @@ namespace Quick_Ship_Router
         // Properties
         private string date = "";
         private List<SummaryItem> items = new List<SummaryItem>();
-        private int totalParts = 0;
+        private int totalTables = 0;
+        private int totalChairs = 0;
         private int totalTravelers = 0;
         private List<BlankItem> blanks = new List<BlankItem>();
         private double totalCNC = 0;
