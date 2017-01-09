@@ -25,10 +25,10 @@ namespace Quick_Ship_Router
         public Form1()
         {
             InitializeComponent();
-            
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            infoLabel.Text = "";
             excelApp = new Excel.Application();
             excelApp.DisplayAlerts = false;
             // Open the traveler template
@@ -55,15 +55,17 @@ namespace Quick_Ship_Router
         private Excel.Application excelApp;
         private Excel.Workbooks workbooks;
         private OdbcConnection MAS = new OdbcConnection();
-        private List<Order> orders = new List<Order>();
-        private List<Router> routers = new List<Router>();
+        private string sortInfo = "";
+        private bool invertCustomers = false;
+        private Summary summary = null;
         // Opens a connection to the MAS database
         private void ConnectToData()
         {
-            loadingLabel.Text = "Logging in...";
+            infoLabel.Text = "Logging in...";
             MAS = new OdbcConnection();
             // initialize the MAS connection
             MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;";
+            //MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347;";
             try
             {
                 MAS.Open();
@@ -73,7 +75,7 @@ namespace Quick_Ship_Router
             {
                 MessageBox.Show("Failed to log in :(");
             }
-            loadingLabel.Text = "";
+            infoLabel.Text = "";
         }
         private void InitializeManagers()
         {
@@ -92,8 +94,8 @@ namespace Quick_Ship_Router
             var blankRef = (Excel.Worksheet)worksheets.get_Item("Blank Parent");
             var boxRef = (Excel.Worksheet)worksheets.get_Item("Box Size");
 
-            tableManager = new TableManager(MAS, loadingLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
-            chairManager = new ChairManager(MAS, loadingLabel, progressBar, chairListView);
+            tableManager = new TableManager(MAS, infoLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
+            chairManager = new ChairManager(MAS, infoLabel, progressBar, chairListView);
         }
         // Fill the customer list with customers
         private void PopulateCustomers()
@@ -113,8 +115,8 @@ namespace Quick_Ship_Router
             if (ImportOrders(specificOrderNo,invertCustomers))
             {
                 // Create travelers
-                tableManager.CompileTravelers();
-                chairManager.CompileTravelers();
+                tableManager.CompileTravelers(backgroundWorker1);
+                chairManager.CompileTravelers(backgroundWorker1);
                 return true;
             }
             return false;
@@ -126,18 +128,22 @@ namespace Quick_Ship_Router
         //======================
         private bool ImportOrders(string specificOrderNo, bool invertCustomers)
         {
-            loadingLabel.Text = "Importing Orders...";
+            //infoLabel.Text = "Importing Orders...";
 
             string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
             // OrderDate >= {d '" +  todayString + "'}
             string customerNames = "";
+            string displayNames = "";
             for (int i = 0; i < customerList.Items.Count; i++)
             {
                 if (customerList.GetItemCheckState(i) == CheckState.Checked)
                 {
                     customerNames += (customerNames.Length > 0 ? "," : "") + "'" + customerList.GetItemText(customerList.Items[i]) + "'";
+                    displayNames += (displayNames.Length > 0 ? ", " : "") + customerList.GetItemText(customerList.Items[i]);
                 }
             }
+            
+            sortInfo = invertCustomers ? "" : "(" + displayNames + ")";
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
             command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : "");
@@ -196,8 +202,10 @@ namespace Quick_Ship_Router
 
                     }
                 }
+                detailReader.Close();
             }
-            loadingLabel.Text = "";
+            reader.Close();
+            //infoLabel.Text = "";
             return true;
         }
         private bool IsTable(string s)
@@ -230,7 +238,7 @@ namespace Quick_Ship_Router
         // Print
         private void btnPrint_Click(object sender, EventArgs e)
         {
-            loadingLabel.Text = "Printing Travelers...";
+            infoLabel.Text = "Printing Travelers...";
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             //var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "traveler.xlsx"),
             //    0, false, 5, "", "", false, 2, "",
@@ -434,25 +442,36 @@ namespace Quick_Ship_Router
             //    }
             //}
             //file.Close();
-            //loadingLabel.Text = "Travelers";
+            //infoLabel.Text = "Travelers";
         }
         // Print summary
         private void btnPrintSummary_Click(object sender, EventArgs e)
         {
-            Summary summary = new Summary(tableManager.Travelers, chairManager.Travelers);
-            summary.Print(workbooks);
+            if (summary == null)
+            {
+                summary = new Summary(tableManager.Travelers, chairManager.Travelers, sortInfo);
+                summary.Print(workbooks);
+            } else
+            {
+                summary.Print(workbooks);
+            }
+            
         }
         // Create Travelers (from selected customers)
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
+            summary = null; // a new summary will need to be created
+            invertCustomers = false;
             tableListView.Clear();
-            CreateTravelers("",false);
+            backgroundWorker1.RunWorkerAsync();
         }
         // Create Travelers(from unselected customers)
         private void btnInvertCustomers_Click(object sender, EventArgs e)
         {
+            summary = null; // a new summary will need to be created
+            invertCustomers = true;
             tableListView.Clear();
-            CreateTravelers("", true);
+            backgroundWorker1.RunWorkerAsync();
         }
         // Login to MAS
         private void login_Click(object sender, EventArgs e)
@@ -471,7 +490,7 @@ namespace Quick_Ship_Router
             //    // Create routers
             //    if (CreateRouters(false, false))
             //    {
-            //        loadingLabel.Text = "Travelers";
+            //        infoLabel.Text = "Travelers";
             //    }
             //}
         }
@@ -479,13 +498,36 @@ namespace Quick_Ship_Router
         private void btnClear_Click(object sender, EventArgs e)
         {
             tableListView.Clear();
+            tableManager.Orders.Clear();
+            tableManager.Travelers.Clear();
             chairListView.Clear();
-            orders.Clear();
+            chairManager.Orders.Clear();
+            chairManager.Travelers.Clear();
         }
         // Create only previously printed travelers
         private void btnCreatedPrinted_Click(object sender, EventArgs e)
         {
             //CreateRouters(true,false);
+        }
+
+        private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+                CreateTravelers("", invertCustomers);
+        }
+
+        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            progressBar.Visible = true;
+            infoLabel.Text = e.UserState.ToString();
+            progressBar.Value = e.ProgressPercentage;
+        }
+
+        private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            tableManager.DisplayTravelers();
+            chairManager.DisplayTravelers();
+            infoLabel.Text = "Complete";
+            progressBar.Visible = false;
         }
     }
 }

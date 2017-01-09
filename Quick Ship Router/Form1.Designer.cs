@@ -28,9 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.btnPrint = new System.Windows.Forms.Button();
-            this.loadingLabel = new System.Windows.Forms.Label();
             this.showToday = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.btnCreatedPrinted = new System.Windows.Forms.Button();
@@ -52,7 +50,7 @@
             this.chairListView = new System.Windows.Forms.ListView();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.infoLabel = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
@@ -60,6 +58,7 @@
             this.button3 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -81,15 +80,6 @@
             this.btnPrint.Text = "Travelers";
             this.btnPrint.UseVisualStyleBackColor = false;
             this.btnPrint.Click += new System.EventHandler(this.btnPrint_Click);
-            // 
-            // loadingLabel
-            // 
-            this.loadingLabel.AutoSize = true;
-            this.loadingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.loadingLabel.Location = new System.Drawing.Point(557, 12);
-            this.loadingLabel.Name = "loadingLabel";
-            this.loadingLabel.Size = new System.Drawing.Size(0, 37);
-            this.loadingLabel.TabIndex = 3;
             // 
             // showToday
             // 
@@ -221,6 +211,7 @@
             // 
             // login
             // 
+            this.login.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.login.Location = new System.Drawing.Point(948, 12);
             this.login.Name = "login";
             this.login.Size = new System.Drawing.Size(104, 23);
@@ -245,7 +236,8 @@
             // 
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(878, 633);
+            this.label3.BackColor = System.Drawing.Color.Transparent;
+            this.label3.Location = new System.Drawing.Point(878, 642);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(174, 39);
             this.label3.TabIndex = 9;
@@ -283,6 +275,8 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tableListView.CheckBoxes = true;
+            this.tableListView.FullRowSelect = true;
+            this.tableListView.GridLines = true;
             this.tableListView.Location = new System.Drawing.Point(6, 6);
             this.tableListView.Name = "tableListView";
             this.tableListView.Size = new System.Drawing.Size(814, 534);
@@ -306,6 +300,8 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.chairListView.CheckBoxes = true;
+            this.chairListView.FullRowSelect = true;
+            this.chairListView.GridLines = true;
             this.chairListView.Location = new System.Drawing.Point(6, 6);
             this.chairListView.Name = "chairListView";
             this.chairListView.Size = new System.Drawing.Size(814, 534);
@@ -334,14 +330,16 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Generate";
             // 
-            // label1
+            // infoLabel
             // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(557, 12);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(0, 37);
-            this.label1.TabIndex = 3;
+            this.infoLabel.AutoSize = true;
+            this.infoLabel.BackColor = System.Drawing.Color.Transparent;
+            this.infoLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.infoLabel.Location = new System.Drawing.Point(578, 21);
+            this.infoLabel.Name = "infoLabel";
+            this.infoLabel.Size = new System.Drawing.Size(159, 37);
+            this.infoLabel.TabIndex = 3;
+            this.infoLabel.Text = "Loading...";
             // 
             // groupBox4
             // 
@@ -352,7 +350,7 @@
             this.groupBox4.ForeColor = System.Drawing.Color.White;
             this.groupBox4.Location = new System.Drawing.Point(349, 12);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(202, 72);
+            this.groupBox4.Size = new System.Drawing.Size(223, 72);
             this.groupBox4.TabIndex = 18;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Print";
@@ -360,11 +358,13 @@
             // button1
             // 
             this.button1.BackColor = System.Drawing.Color.LightBlue;
-            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button1.ForeColor = System.Drawing.Color.Black;
             this.button1.Location = new System.Drawing.Point(6, 15);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(92, 49);
+            this.button1.Size = new System.Drawing.Size(102, 49);
             this.button1.TabIndex = 0;
             this.button1.Text = "Travelers";
             this.button1.UseVisualStyleBackColor = false;
@@ -373,11 +373,13 @@
             // button2
             // 
             this.button2.BackColor = System.Drawing.Color.LightBlue;
-            this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button2.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.button2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button2.ForeColor = System.Drawing.Color.Black;
-            this.button2.Location = new System.Drawing.Point(104, 15);
+            this.button2.Location = new System.Drawing.Point(114, 15);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(92, 50);
+            this.button2.Size = new System.Drawing.Size(102, 49);
             this.button2.TabIndex = 8;
             this.button2.Text = "Summary";
             this.button2.UseVisualStyleBackColor = false;
@@ -400,6 +402,7 @@
             // button3
             // 
             this.button3.BackColor = System.Drawing.Color.Green;
+            this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button3.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button3.ForeColor = System.Drawing.Color.White;
             this.button3.Location = new System.Drawing.Point(6, 15);
@@ -413,6 +416,7 @@
             // button4
             // 
             this.button4.BackColor = System.Drawing.Color.Blue;
+            this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button4.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button4.ForeColor = System.Drawing.Color.White;
             this.button4.Location = new System.Drawing.Point(168, 15);
@@ -425,20 +429,26 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(557, 61);
+            this.progressBar.Location = new System.Drawing.Point(578, 61);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(285, 23);
+            this.progressBar.Size = new System.Drawing.Size(268, 23);
             this.progressBar.Step = 1;
             this.progressBar.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar.TabIndex = 20;
             this.progressBar.Visible = false;
             // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.WorkerReportsProgress = true;
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
+            this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
+            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.DarkSeaGreen;
-            this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
+            this.BackColor = System.Drawing.Color.DimGray;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.ClientSize = new System.Drawing.Size(1064, 681);
             this.Controls.Add(this.progressBar);
@@ -449,11 +459,10 @@
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.login);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.infoLabel);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.loadingLabel);
             this.Name = "Form1";
-            this.Text = "Quick Ship Traveler    v1.1";
+            this.Text = "Quick Ship Traveler    v2.0";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Shown += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
@@ -473,7 +482,6 @@
         #endregion
 
         private System.Windows.Forms.Button btnPrint;
-        private System.Windows.Forms.Label loadingLabel;
         private System.Windows.Forms.CheckBox showToday;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckedListBox customerList;
@@ -495,7 +503,7 @@
         private System.Windows.Forms.ListView chairListView;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label infoLabel;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button button2;
@@ -503,6 +511,7 @@
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.ProgressBar progressBar;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 

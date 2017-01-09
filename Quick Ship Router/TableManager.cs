@@ -33,9 +33,8 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers()
+        public void CompileTravelers(BackgroundWorker backgroundWorker1)
         {
-            m_infoLabel.Text = "Compiling Tables...";
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
             m_travelers.Clear();
@@ -66,8 +65,10 @@ namespace Quick_Ship_Router
             //==========================================
             // compile the travelers
             //==========================================
+            int index = 0;
             foreach (Order order in m_orders)
             {
+                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Tables...");
                 // Make a unique traveler for each order, while combining common parts from different models into single traveler
                 bool foundBill = false;
                 // search for existing traveler
@@ -92,19 +93,16 @@ namespace Quick_Ship_Router
                     // add the new traveler to the list
                     m_travelers.Add(newTraveler);
                 }
+                index++;
             }
-            ImportInformation();
-            DisplayTravelers();
-            m_infoLabel.Text = "";
+            ImportInformation(backgroundWorker1);
         }
-        private void ImportInformation()
-        {
-            m_infoLabel.Text = "Gathering Table Info";
-            m_progressBar.Visible = true;
+        private void ImportInformation(BackgroundWorker backgroundWorker1)
+        { 
             int index = 0;
             foreach (Table traveler in m_travelers)
             {
-                m_progressBar.Value = Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100);
+                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Table Info...");
                 traveler.CheckInventory(MAS);
                 // update and total the final parts
                 traveler.Part.TotalQuantity = traveler.Quantity;
@@ -115,8 +113,6 @@ namespace Quick_Ship_Router
                 GetBlankInfo(traveler);
                 index++;
             }
-            m_progressBar.Visible = false;
-            m_infoLabel.Text = "";
         }
         // get a reader friendly string for the color
         private void GetColorInfo(Table traveler)
@@ -207,7 +203,6 @@ namespace Quick_Ship_Router
                     traveler.BlankQuantity = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(traveler.Quantity) / tablesPerBlank));
                     int partsProduced = traveler.BlankQuantity * Convert.ToInt32(tablesPerBlank);
                     traveler.LeftoverParts = partsProduced - traveler.Quantity;
-                    break;
                 }
                 if (blankRange != null) Marshal.ReleaseComObject(blankRange);
 
@@ -266,14 +261,14 @@ namespace Quick_Ship_Router
             m_tableListView.View = View.Details;
 
             // production info
-            m_tableListView.Columns.Add("Part No.", 100, HorizontalAlignment.Left);
-            m_tableListView.Columns.Add("ID", 50, HorizontalAlignment.Left);
-            m_tableListView.Columns.Add("Ordered", 75, HorizontalAlignment.Left);
-            m_tableListView.Columns.Add("Need to Produce", 75, HorizontalAlignment.Left);
+            m_tableListView.Columns.Add("Part No.", 150, HorizontalAlignment.Left);
+            m_tableListView.Columns.Add("ID", 100, HorizontalAlignment.Left);
+            m_tableListView.Columns.Add("Ordered", 100, HorizontalAlignment.Left);
+            m_tableListView.Columns.Add("Need to Produce", 100, HorizontalAlignment.Left);
             // order info
             m_tableListView.Columns.Add("Order No.(s)", 200, HorizontalAlignment.Left);
             m_tableListView.Columns.Add("Customer(s)", 200, HorizontalAlignment.Left);
-            m_tableListView.Columns.Add("Ship date(s)", 100, HorizontalAlignment.Left);
+            m_tableListView.Columns.Add("Ship date(s)", 200, HorizontalAlignment.Left);
 
 
             foreach (Table traveler in m_travelers)
@@ -300,10 +295,12 @@ namespace Quick_Ship_Router
                     customerList,
                     dateList
                 };
-                ListViewItem chairListViewItem = new ListViewItem(row);
-                chairListViewItem.Checked = true;
-                m_tableListView.Items.Add(chairListViewItem);
+                ListViewItem tableListViewItem = new ListViewItem(row);
+                tableListViewItem.Checked = true;
+                m_tableListView.Items.Add(tableListViewItem);
             }
+            m_tableListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            m_tableListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
         //=======================
         // Printing
@@ -493,6 +490,7 @@ namespace Quick_Ship_Router
                             file.Write(traveler.Export());
                             file.Flush();
                         }
+                        traveler.Printed = true;
                     }
                     catch (Exception ex)
                     {

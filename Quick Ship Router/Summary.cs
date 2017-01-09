@@ -70,8 +70,10 @@ namespace Quick_Ship_Router
             public List<string> orderDates;
             public List<string> customers;
         }
-        public Summary(List<Table> tables, List<Chair> chairs)
+        public Summary(List<Table> tables, List<Chair> chairs, string sort)
         {
+            // sort information
+            sortInfo = sort;
             // date
             date = DateTime.Today.ToString("MM/dd/yyyy");
             foreach (Table table in tables)
@@ -162,14 +164,14 @@ namespace Quick_Ship_Router
             var summarySheet = (Excel.Worksheet)worksheets.get_Item("Summary Template");
             // date
             Excel.Range title = summarySheet.get_Range("A1", "A1");
-            title.Value2 = "Open Order Traveler Summary for " + date;
+            title.Value2 = sortInfo + " Traveler Summary for " + date + (printed ? " " + "[COPY]" : "");
             Marshal.ReleaseComObject(title);
             // totals
             Excel.Range travelerTotal = summarySheet.get_Range("A2", "A2");
             travelerTotal.Value2 = totalTravelers;
             Marshal.ReleaseComObject(travelerTotal);
             Excel.Range partTotal = summarySheet.get_Range("C2", "C2");
-            partTotal.Value2 = totalTables;
+            partTotal.Value2 = totalTables + " tables, " + totalChairs + " chairs";
             Marshal.ReleaseComObject(partTotal);
             // print items
             int row = 4;
@@ -224,6 +226,7 @@ namespace Quick_Ship_Router
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing,
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing);
                 //###################################
+                printed = true;
             }
             catch (Exception ex)
             {
@@ -236,6 +239,8 @@ namespace Quick_Ship_Router
         }
         // Properties
         private string date = "";
+        private string sortInfo = "";
+        private bool printed = false;
         private List<SummaryItem> items = new List<SummaryItem>();
         private int totalTables = 0;
         private int totalChairs = 0;

@@ -28,7 +28,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers()
+        public void CompileTravelers(BackgroundWorker backgroundWorker1)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -60,8 +60,10 @@ namespace Quick_Ship_Router
             //==========================================
             // compile the travelers
             //==========================================
+            int index = 0;
             foreach (Order order in m_orders)
             {
+                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Chairs...");
                 // Make a unique traveler for each order, while combining common parts from different models into single traveler
                 bool foundBill = false;
                 // search for existing traveler
@@ -86,25 +88,21 @@ namespace Quick_Ship_Router
                     // add the new traveler to the list
                     m_travelers.Add(newTraveler);
                 }
+                index++;
             }
-            ImportInformation();
-            DisplayTravelers();
+            ImportInformation(backgroundWorker1);
         }
-        private void ImportInformation()
+        private void ImportInformation(BackgroundWorker backgroundWorker1)
         {
-            m_infoLabel.Text = "Gathering Chair Info";
-            m_progressBar.Visible = true;
             int index = 0;
             foreach (Chair traveler in m_travelers)
             {
-                m_progressBar.Value = Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100);
+                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Chair Info...");
                 traveler.CheckInventory(MAS);
                 // update and total the final parts
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
             }
-            m_progressBar.Visible = false;
-            m_infoLabel.Text = "";
         }
         public void DisplayTravelers()
         {
@@ -152,6 +150,8 @@ namespace Quick_Ship_Router
                 chairListViewItem.Checked = true;
                 m_chairListView.Items.Add(chairListViewItem);
             }
+            m_chairListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            m_chairListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
         }
         //=======================
         // Printing
@@ -204,10 +204,6 @@ namespace Quick_Ship_Router
                     range = outputSheet.get_Range("B" + row, "B" + row);
                     range.Value2 = traveler.Part.BillDesc;
                     row++;
-                    // Color
-                    range = outputSheet.get_Range("B" + row, "B" + row);
-                    range.Value2 = traveler.Color;
-                    row++;
                     // Sales Orders -----------------------------------------------------------------
                     range = outputSheet.get_Range("B" + row, "C" + row);
                     range.Item[1].Value2 = orderList;
@@ -252,6 +248,7 @@ namespace Quick_Ship_Router
                     Excel.Borders borders = range.Borders;
                     borders[Excel.XlBordersIndex.xlInsideHorizontal].LineStyle = Excel.XlLineStyle.xlContinuous;
                     borders[Excel.XlBordersIndex.xlInsideVertical].LineStyle = Excel.XlLineStyle.xlContinuous;
+                    borders[Excel.XlBordersIndex.xlEdgeTop].LineStyle = Excel.XlLineStyle.xlContinuous;
                     borders[Excel.XlBordersIndex.xlEdgeLeft].LineStyle = Excel.XlLineStyle.xlContinuous;
                     borders[Excel.XlBordersIndex.xlEdgeBottom].LineStyle = Excel.XlLineStyle.xlContinuous;
                     borders[Excel.XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlContinuous;

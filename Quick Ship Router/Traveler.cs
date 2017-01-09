@@ -304,6 +304,7 @@ namespace Quick_Ship_Router
                         m_quantity = Math.Min(-available, m_quantity);
                     }
                 }
+                reader.Close();
             }
             catch (Exception ex)
             {
