@@ -28,7 +28,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,bool onlyPrinted)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -43,52 +43,64 @@ namespace Quick_Ship_Router
             while ((line = file.ReadLine()) != null && line != "")
             {
                 Traveler printedTraveler = new Traveler(line);
-                foreach (Order printedOrder in printedTraveler.Orders)
+                if (onlyPrinted)
                 {
-                    foreach (Order order in m_orders)
+                    // just add this traveler to the finished list
+                    if (IsChair(printedTraveler.PartNo)) Travelers.Add(new Chair(line));
+                }
+                else
+                {
+                    // check to see if these orders have been printed already
+                    foreach (Order printedOrder in printedTraveler.Orders)
                     {
-                        if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                        foreach (Order order in m_orders)
                         {
-                            // throw this order out
-                            m_orders.Remove(order);
-                            break;
+                            if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                            {
+                                // throw this order out
+                                m_orders.Remove(order);
+                                break;
+                            }
                         }
                     }
                 }
             }
             file.Close();
-            //==========================================
-            // compile the travelers
-            //==========================================
-            int index = 0;
-            foreach (Order order in m_orders)
+            if (!onlyPrinted)
             {
-                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Chairs...");
-                // Make a unique traveler for each order, while combining common parts from different models into single traveler
-                bool foundBill = false;
-                // search for existing traveler
-                foreach (Chair traveler in m_travelers)
+                //==========================================
+                // compile the travelers
+                //==========================================
+                int index = 0;
+                foreach (Order order in m_orders)
                 {
-                    if (traveler.Part.BillNo == order.ItemCode)
+                    backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Chairs...");
+                    // Make a unique traveler for each order, while combining common parts from different models into single traveler
+                    bool foundBill = false;
+                    // search for existing traveler
+                    foreach (Chair traveler in m_travelers)
                     {
-                        // update existing traveler
-                        foundBill = true;
-                        // add to the quantity of items
-                        traveler.Quantity += order.QuantityOrdered;
-                        // add to the order list
-                        traveler.Orders.Add(order);
+                        if (traveler.Part.BillNo == order.ItemCode)
+                        {
+                            // update existing traveler
+                            foundBill = true;
+                            // add to the quantity of items
+                            traveler.Quantity += order.QuantityOrdered;
+                            // add to the order list
+                            traveler.Orders.Add(order);
+                        }
                     }
+                    if (!foundBill)
+                    {
+                        // create a new traveler from the new item
+                        Chair newTraveler = new Chair(order.ItemCode, order.QuantityOrdered, MAS);
+                        // add to the order list
+                        newTraveler.Orders.Add(order);
+                        // add the new traveler to the list
+                        m_travelers.Add(newTraveler);
+                    }
+                    index++;
                 }
-                if (!foundBill)
-                {
-                    // create a new traveler from the new item
-                    Chair newTraveler = new Chair(order.ItemCode, order.QuantityOrdered, MAS);
-                    // add to the order list
-                    newTraveler.Orders.Add(order);
-                    // add the new traveler to the list
-                    m_travelers.Add(newTraveler);
-                }
-                index++;
             }
             ImportInformation(backgroundWorker1);
         }
@@ -97,12 +109,39 @@ namespace Quick_Ship_Router
             int index = 0;
             foreach (Chair traveler in m_travelers)
             {
+                if (traveler.Part == null) traveler.ImportPart(MAS);
                 backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Chair Info...");
                 traveler.CheckInventory(MAS);
                 // update and total the final parts
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
+                // chair specific
+                GetBoxInfo(traveler);
             }
+        }
+        private void GetBoxInfo(Chair traveler)
+        {
+            if (traveler.PartNo[traveler.PartNo.Length-1] == '4')
+            {
+                traveler.PartsPerBox = 4;
+            } else
+            {
+                traveler.PartsPerBox = 6;
+            }
+            traveler.RegPackQty = traveler.Quantity / traveler.PartsPerBox;
+        }
+        private bool IsChair(string s)
+        {
+            if (s.Substring(0, 2) == "38")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 5 && parts[1].Length == 4 && parts[2].Length == 3);
+            }
+            else
+            {
+                return false;
+            }
+
         }
         public void DisplayTravelers()
         {

@@ -13,6 +13,7 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
+using System.Net.Http;
 
 namespace Quick_Ship_Router
 {
@@ -33,7 +34,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,bool onlyPrinted)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -48,52 +49,64 @@ namespace Quick_Ship_Router
             while ((line = file.ReadLine()) != null && line != "")
             {
                 Traveler printedTraveler = new Traveler(line);
-                foreach (Order printedOrder in printedTraveler.Orders)
+                if (onlyPrinted)
                 {
-                    foreach (Order order in m_orders)
+                    // just add this traveler to the finished list
+                    if (IsTable(printedTraveler.PartNo)) Travelers.Add(new Table(line));
+                }
+                else
+                {
+                    // check to see if these orders have been printed already
+                    foreach (Order printedOrder in printedTraveler.Orders)
                     {
-                        if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                        foreach (Order order in m_orders)
                         {
-                            // throw this order out
-                            m_orders.Remove(order);
-                            break;
+                            if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                            {
+                                // throw this order out
+                                m_orders.Remove(order);
+                                break;
+                            }
                         }
                     }
                 }
             }
             file.Close();
-            //==========================================
-            // compile the travelers
-            //==========================================
-            int index = 0;
-            foreach (Order order in m_orders)
+            if (!onlyPrinted)
             {
-                backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Tables...");
-                // Make a unique traveler for each order, while combining common parts from different models into single traveler
-                bool foundBill = false;
-                // search for existing traveler
-                foreach (Table traveler in m_travelers)
+                //==========================================
+                // compile the travelers
+                //==========================================
+                int index = 0;
+                foreach (Order order in m_orders)
                 {
-                    if (traveler.Part.BillNo == order.ItemCode)
+                    backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_orders.Count)) * 100), "Compiling Tables...");
+                    // Make a unique traveler for each order, while combining common parts from different models into single traveler
+                    bool foundBill = false;
+                    // search for existing traveler
+                    foreach (Table traveler in m_travelers)
                     {
-                        // update existing traveler
-                        foundBill = true;
-                        // add to the quantity of items
-                        traveler.Quantity += order.QuantityOrdered;
-                        // add to the order list
-                        traveler.Orders.Add(order);
+                        if (traveler.Part.BillNo == order.ItemCode)
+                        {
+                            // update existing traveler
+                            foundBill = true;
+                            // add to the quantity of items
+                            traveler.Quantity += order.QuantityOrdered;
+                            // add to the order list
+                            traveler.Orders.Add(order);
+                        }
                     }
+                    if (!foundBill)
+                    {
+                        // create a new traveler from the new item
+                        Table newTraveler = new Table(order.ItemCode, order.QuantityOrdered, MAS);
+                        // add to the order list
+                        newTraveler.Orders.Add(order);
+                        // add the new traveler to the list
+                        m_travelers.Add(newTraveler);
+                    }
+                    index++;
                 }
-                if (!foundBill)
-                {
-                    // create a new traveler from the new item
-                    Table newTraveler = new Table(order.ItemCode, order.QuantityOrdered, MAS);
-                    // add to the order list
-                    newTraveler.Orders.Add(order);
-                    // add the new traveler to the list
-                    m_travelers.Add(newTraveler);
-                }
-                index++;
             }
             ImportInformation(backgroundWorker1);
         }
@@ -102,6 +115,7 @@ namespace Quick_Ship_Router
             int index = 0;
             foreach (Table traveler in m_travelers)
             {
+                if (traveler.Part == null) traveler.ImportPart(MAS);
                 backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Table Info...");
                 traveler.CheckInventory(MAS);
                 // update and total the final parts
@@ -252,6 +266,10 @@ namespace Quick_Ship_Router
             // subtract the inventory parts from the box quantity
             // router.RegPackQty = Math.Max(0, router.RegPackQty - ((router.RegPackQty + router.SupPackQty) - router.Quantity));
             
+        }
+        private bool IsTable(string s)
+        {
+            return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
         }
         public void DisplayTravelers()
         {
@@ -500,6 +518,25 @@ namespace Quick_Ship_Router
             }
             file.Close();
             m_infoLabel.Text = "";
+        }
+        async public void PrintLabels()
+        {
+            foreach (Table table in m_travelers) {
+                using (var client = new HttpClient())
+                {
+                    var values = new Dictionary<string, string>
+                    {
+                       { "Unit", table.PartNo },
+                       { "Quantity", table.Quantity.ToString() }
+                    };
+
+                    var content = new FormUrlEncodedContent(values);
+
+                    var response = await client.PostAsync("http://192.168.2.6/", content);
+
+                    var responseString = await response.Content.ReadAsStringAsync();
+                }
+            }
         }
         //=======================
         // Properties

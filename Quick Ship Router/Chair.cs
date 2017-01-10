@@ -37,7 +37,7 @@ namespace Quick_Ship_Router
         //===========================
         private void GetBlacklist()
         {
-            m_blacklist.Add(new BlacklistItem(Method.StartsWith, "/")); // Misc work items
+            m_blacklist.Add(new BlacklistItem("/")); // Misc work items
         }
     }
 }

@@ -52,11 +52,17 @@ namespace Quick_Ship_Router
             if (excelApp != null) Marshal.FinalReleaseComObject(excelApp);
         }
         // Properties
+        enum Mode
+        {
+            CreateSelected,
+            CreateUnselected,
+            CreateSpecific,
+            CreatePrinted
+        }
         private Excel.Application excelApp;
         private Excel.Workbooks workbooks;
         private OdbcConnection MAS = new OdbcConnection();
         private string sortInfo = "";
-        private bool invertCustomers = false;
         private Summary summary = null;
         // Opens a connection to the MAS database
         private void ConnectToData()
@@ -109,24 +115,33 @@ namespace Quick_Ship_Router
                 customerList.Items.Add(customerNo, (customerNo == "AMAZOND" || customerNo == "WAYFAIR"));
             }
         }
-        private bool CreateTravelers(string specificOrderNo, bool invertCustomers)
+        private bool CreateTravelers(Mode mode)
         {
             // Import new orders
-            if (ImportOrders(specificOrderNo,invertCustomers))
+            if (mode == Mode.CreatePrinted || ImportOrders(mode))
             {
                 // Create travelers
-                tableManager.CompileTravelers(backgroundWorker1);
-                chairManager.CompileTravelers(backgroundWorker1);
+                tableManager.CompileTravelers(backgroundWorker1, mode == Mode.CreatePrinted);
+                chairManager.CompileTravelers(backgroundWorker1, mode == Mode.CreatePrinted);
                 return true;
             }
             return false;
         }
-       
+        private void Clear()
+        {
+            summary = null;
+            tableListView.Clear();
+            tableManager.Orders.Clear();
+            tableManager.Travelers.Clear();
+            chairListView.Clear();
+            chairManager.Orders.Clear();
+            chairManager.Travelers.Clear();
+        }
         
         //======================
         // Open Order
         //======================
-        private bool ImportOrders(string specificOrderNo, bool invertCustomers)
+        private bool ImportOrders(Mode mode)
         {
             //infoLabel.Text = "Importing Orders...";
 
@@ -143,10 +158,10 @@ namespace Quick_Ship_Router
                 }
             }
             
-            sortInfo = invertCustomers ? "" : "(" + displayNames + ")";
+            sortInfo = mode == Mode.CreateSelected ? "(" + displayNames + ")" : "";
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
-            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE CustomerNo " + (invertCustomers ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : "");
+            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE " + (mode == Mode.CreateSpecific ? "SalesOrderNo = '" + specificOrder.Text + "'" : "CustomerNo " + (mode == Mode.CreateUnselected ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
             OdbcDataReader reader = command.ExecuteReader();
             // read info
             while (reader.Read())
@@ -250,199 +265,6 @@ namespace Quick_Ship_Router
 
             tableManager.PrintTravelers(worksheets);
             chairManager.PrintTravelers(worksheets);
-            
-            
-            //// create the output workbook
-            //int currentSheet = 2;
-            //for (int itemIndex = 0; itemIndex < tableListView.Items.Count; itemIndex++)
-            //{
-            //    if (tableListView.Items[itemIndex].Checked)
-            //    {
-            //        Router router = routers[itemIndex];
-            //        templateSheet.Copy(Type.Missing, workbook.Worksheets[currentSheet - 1]);
-
-            //        Excel.Worksheet outputSheet = workbook.Worksheets[currentSheet];
-
-            //        // Sales Orders
-            //        string customerList = "";
-            //        string orderList = "";
-            //        int i = 0;
-            //        foreach (Order order in router.Orders)
-            //        {
-            //            customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-            //            orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
-            //            i++;
-            //        }
-            //        //#####################
-            //        // Production Traveler
-            //        //#####################
-            //        Excel.Range range;
-            //        int row = 1;
-            //        // Documentation
-            //        range = outputSheet.get_Range("A" + row, "A" + row);
-            //        range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
-            //        range.get_Characters(7, 15).Font.FontStyle = "bold";
-            //        range.get_Characters(7, 15).Font.Size = 20;
-            //        row++;
-            //        // Part
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1] = router.Item.BillNo;
-            //        range.Item[2] = router.Quantity;
-            //        row++;
-            //        // Description
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.Item.BillDesc;
-            //        row++;
-            //        // Drawing
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.Item.DrawingNo;
-            //        row++;
-            //        // Sales Orders
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = orderList;
-            //        row++;
-            //        // Customers
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = customerList;
-            //        row++;
-            //        // Date printed
-            //        router.TimeStamp = DateTime.Now.ToString("MM/dd/yyyy   hh:mm tt");
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.TimeStamp;
-            //        row++;
-            //        // Blank
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.BlankNo + "   " + router.BlankSize + " (" + router.PartsPerBlank + " per blank)";
-            //        range.Item[2].Value2 = router.BlankQuantity;
-            //        row++;
-            //        // Leftover
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[2].Value2 = router.LeftoverParts;
-            //        row++;
-            //        // Parent material
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.Material.ItemCode;
-            //        range.Item[2].Value2 = router.Material.QuantityPerBill + " " + router.Material.Unit;
-            //        row++;
-            //        // Color
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.Color;
-            //        row++;
-            //        // Heien/Weeke rate
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.Cnc.QuantityPerBill + " " + router.Cnc.Unit;
-            //        range.Item[2].Value2 = router.Cnc.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-            //        row++;
-            //        // Vector rate
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.Vector.QuantityPerBill + " " + router.Vector.Unit;
-            //        range.Item[2].Value2 = router.Vector.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-            //        row++;
-            //        // Pack rate
-            //        if (router.Assm != null)
-            //        {
-            //            range = outputSheet.get_Range("B" + row, "C" + row);
-            //            range.Item[1].Value2 = router.Assm.QuantityPerBill + " " + router.Assm.Unit;
-            //            range.Item[2].Value2 = router.Assm.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-            //        }
-            //        row++;
-            //        // Regular pack
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
-            //        range.Item[2].Value2 = router.RegPackQty;
-            //        row++;
-            //        // Super pack
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.SupPack;
-            //        range.Item[2].Value2 = router.SupPackQty;
-            //        row++;
-            //        // Hardware
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.Hardware;
-            //        row++;
-
-            //        //#####################
-            //        // Box Construction
-            //        //#####################
-
-            //        row ++;
-            //        // Documentation
-            //        range = outputSheet.get_Range("A" + row, "A" + row);
-            //        range.Value2 = router.ID.ToString("D6") + (router.Copy ? " COPY" : "");
-            //        range.get_Characters(7, 15).Font.FontStyle = "bold";
-            //        range.get_Characters(7, 15).Font.Size = 20;
-            //        row++;
-            //        // Part
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1] = router.Item.BillNo;
-            //        range.Item[2] = router.Quantity;
-            //        row++;
-            //        // Description
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.Item.BillDesc;
-            //        row++;
-            //        // Regular pack
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = (router.BoxItemCode == "" ? router.RegPack : "Use box: " + router.BoxItemCode);
-            //        range.Item[2].Value2 = router.RegPackQty;
-            //        row++;
-            //        // Super pack
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = router.SupPack;
-            //        range.Item[2].Value2 = router.SupPackQty;
-            //        row++;
-            //        // Box rate
-            //        if (router.Box != null)
-            //        {
-            //            range = outputSheet.get_Range("B" + row, "C" + row);
-            //            range.Item[1].Value2 = router.Box.QuantityPerBill + " " + router.Box.Unit;
-            //            range.Item[2].Value2 = router.Box.QuantityPerBill * router.Quantity + " " + router.Vector.Unit;
-            //        }
-            //        row++;
-            //        // Sales Orders
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = orderList;
-            //        row++;
-            //        // Customers
-            //        range = outputSheet.get_Range("B" + row, "C" + row);
-            //        range.Item[1].Value2 = customerList;
-            //        row++;
-            //        // Date printed
-            //        range = outputSheet.get_Range("B" + row, "B" + row);
-            //        range.Value2 = router.TimeStamp;
-            //        row++;
-            //        try
-            //        {
-            //            // log that this these orders have been printed
-
-            //            //foreach (Order order in router.Orders)
-            //            //{
-            //            //    file.WriteLine(order.SalesOrderNo);
-            //            //    file.Flush();
-            //            //}
-
-
-            //            //##### Print the Cover sheet #######
-            //            outputSheet.PrintOut(
-            //                Type.Missing, Type.Missing, Type.Missing, Type.Missing,
-            //                Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-            //            //###################################
-
-            //            // successfully printed, so we should log in the printed.json file
-            //            if (!router.Copy)
-            //            {
-            //                file.Write(router.Export());
-            //                file.Flush();
-            //            }
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            MessageBox.Show("A problem occured when printing: " + ex.Message);
-            //        }
-            //    }
-            //}
-            //file.Close();
-            //infoLabel.Text = "Travelers";
         }
         // Print summary
         private void btnPrintSummary_Click(object sender, EventArgs e)
@@ -457,21 +279,22 @@ namespace Quick_Ship_Router
             }
             
         }
+        // Print labels
+        private void btnPrintLabels_Click(object sender, EventArgs e)
+        {
+
+        }
         // Create Travelers (from selected customers)
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
-            summary = null; // a new summary will need to be created
-            invertCustomers = false;
-            tableListView.Clear();
-            backgroundWorker1.RunWorkerAsync();
+            Clear();
+            backgroundWorker1.RunWorkerAsync(Mode.CreateSelected);
         }
         // Create Travelers(from unselected customers)
         private void btnInvertCustomers_Click(object sender, EventArgs e)
         {
-            summary = null; // a new summary will need to be created
-            invertCustomers = true;
-            tableListView.Clear();
-            backgroundWorker1.RunWorkerAsync();
+            Clear();
+            backgroundWorker1.RunWorkerAsync(Mode.CreateUnselected);
         }
         // Login to MAS
         private void login_Click(object sender, EventArgs e)
@@ -483,51 +306,41 @@ namespace Quick_Ship_Router
         // Add specific order
         private void btnCreateSpecificOrder_Click(object sender, EventArgs e)
         {
-            // Import new orders
-            //if (ImportOrders(specificOrder.Text, false))
-            //{
-            //    //orders = FilterByProduct(orders);
-            //    // Create routers
-            //    if (CreateRouters(false, false))
-            //    {
-            //        infoLabel.Text = "Travelers";
-            //    }
-            //}
+            backgroundWorker1.RunWorkerAsync(Mode.CreateSpecific);
         }
-        // Clear Travelers
-        private void btnClear_Click(object sender, EventArgs e)
-        {
-            tableListView.Clear();
-            tableManager.Orders.Clear();
-            tableManager.Travelers.Clear();
-            chairListView.Clear();
-            chairManager.Orders.Clear();
-            chairManager.Travelers.Clear();
-        }
+
         // Create only previously printed travelers
         private void btnCreatedPrinted_Click(object sender, EventArgs e)
         {
-            //CreateRouters(true,false);
+            Clear();
+            backgroundWorker1.RunWorkerAsync(Mode.CreatePrinted);
         }
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
-                CreateTravelers("", invertCustomers);
+                CreateTravelers((Mode)e.Argument);
         }
 
         private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            progressBar.Visible = true;
             infoLabel.Text = e.UserState.ToString();
             progressBar.Value = e.ProgressPercentage;
         }
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            specificOrder.Text = "";
             tableManager.DisplayTravelers();
             chairManager.DisplayTravelers();
             infoLabel.Text = "Complete";
-            progressBar.Visible = false;
+            progressBar.Value = 0;
+            btnCreateTravelers.Enabled = true;
+            btnInvertCustomers.Enabled = true;
+        }
+
+        private void btnClearAll_Click(object sender, EventArgs e)
+        {
+            Clear();
         }
     }
 }

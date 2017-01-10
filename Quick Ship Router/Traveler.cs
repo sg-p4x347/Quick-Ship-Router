@@ -358,6 +358,7 @@ namespace Quick_Ship_Router
         protected List<Item> m_components = new List<Item>(); // everything that isn't work, boxes, material or edgebanding
         protected List<BlacklistItem> m_blacklist = new List<BlacklistItem>();
         // Box
+        protected int m_partsPerBox = 1;
         protected string m_boxItemCode = "";
         protected string m_regPack = "N/A";
         protected int m_regPackQty = 0;
@@ -599,7 +600,18 @@ namespace Quick_Ship_Router
                 m_blacklist = value;
             }
         }
+        internal int PartsPerBox
+        {
+            get
+            {
+                return m_partsPerBox;
+            }
 
+            set
+            {
+                m_partsPerBox = value;
+            }
+        }
         internal string BoxItemCode
         {
             get
