@@ -31,17 +31,20 @@
             this.btnPrint = new System.Windows.Forms.Button();
             this.showToday = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.btnCreatedPrinted = new System.Windows.Forms.Button();
+            this.login = new System.Windows.Forms.Button();
+            this.btn = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
             this.btnCreateSpecificOrder = new System.Windows.Forms.Button();
             this.specificOrder = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
             this.combineOrders = new System.Windows.Forms.CheckBox();
             this.customerList = new System.Windows.Forms.CheckedListBox();
             this.btnInvertCustomers = new System.Windows.Forms.Button();
             this.btnCreateTravelers = new System.Windows.Forms.Button();
-            this.login = new System.Windows.Forms.Button();
             this.btnPrintSummary = new System.Windows.Forms.Button();
-            this.label3 = new System.Windows.Forms.Label();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tableListView = new System.Windows.Forms.ListView();
@@ -51,6 +54,7 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.infoLabel = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.btnPrintLabels = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
@@ -58,10 +62,6 @@
             this.button4 = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.btn = new System.Windows.Forms.Button();
-            this.btnPrintLabels = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
-            this.label1 = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -119,6 +119,18 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Refined Search";
             // 
+            // label1
+            // 
+            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Location = new System.Drawing.Point(30, 628);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(138, 26);
+            this.label1.TabIndex = 22;
+            this.label1.Text = "Powered by C#\r\nDeveloped by Gage Coates";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // btnCreatedPrinted
             // 
             this.btnCreatedPrinted.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -132,6 +144,46 @@
             this.btnCreatedPrinted.Text = "Load Printed Travelers";
             this.btnCreatedPrinted.UseVisualStyleBackColor = false;
             this.btnCreatedPrinted.Click += new System.EventHandler(this.btnCreatedPrinted_Click);
+            // 
+            // login
+            // 
+            this.login.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.login.BackColor = System.Drawing.Color.DimGray;
+            this.login.ForeColor = System.Drawing.Color.White;
+            this.login.Location = new System.Drawing.Point(6, 591);
+            this.login.Name = "login";
+            this.login.Size = new System.Drawing.Size(188, 34);
+            this.login.TabIndex = 7;
+            this.login.Text = "Login to MAS";
+            this.login.UseVisualStyleBackColor = false;
+            this.login.Click += new System.EventHandler(this.login_Click);
+            // 
+            // btn
+            // 
+            this.btn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
+            this.btn.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btn.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btn.ForeColor = System.Drawing.Color.Black;
+            this.btn.Location = new System.Drawing.Point(6, 384);
+            this.btn.Name = "btn";
+            this.btn.Size = new System.Drawing.Size(188, 34);
+            this.btn.TabIndex = 21;
+            this.btn.Text = "Clear";
+            this.btn.UseVisualStyleBackColor = false;
+            this.btn.Click += new System.EventHandler(this.btnClearAll_Click);
+            // 
+            // button5
+            // 
+            this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(128)))));
+            this.button5.Location = new System.Drawing.Point(6, 344);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(188, 34);
+            this.button5.TabIndex = 16;
+            this.button5.Text = "Been Printed?";
+            this.button5.UseVisualStyleBackColor = false;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // btnCreateSpecificOrder
             // 
@@ -152,7 +204,7 @@
             this.specificOrder.Name = "specificOrder";
             this.specificOrder.Size = new System.Drawing.Size(188, 26);
             this.specificOrder.TabIndex = 14;
-            this.specificOrder.Text = "Order #";
+            this.specificOrder.Text = "Order # / Traveler #";
             this.specificOrder.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // label4
@@ -163,6 +215,18 @@
             this.label4.Size = new System.Drawing.Size(110, 20);
             this.label4.TabIndex = 13;
             this.label4.Text = "Specific order:";
+            // 
+            // label3
+            // 
+            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.label3.AutoSize = true;
+            this.label3.BackColor = System.Drawing.Color.Transparent;
+            this.label3.Location = new System.Drawing.Point(26, 548);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(142, 40);
+            this.label3.TabIndex = 9;
+            this.label3.Text = "Currently supports \r\ntables and chairs";
+            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // combineOrders
             // 
@@ -210,20 +274,6 @@
             this.btnCreateTravelers.UseVisualStyleBackColor = false;
             this.btnCreateTravelers.Click += new System.EventHandler(this.btnCreateTravelers_Click);
             // 
-            // login
-            // 
-            this.login.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.login.BackColor = System.Drawing.Color.DimGray;
-            this.login.ForeColor = System.Drawing.Color.White;
-            this.login.Location = new System.Drawing.Point(6, 591);
-            this.login.Name = "login";
-            this.login.Size = new System.Drawing.Size(188, 34);
-            this.login.TabIndex = 7;
-            this.login.Text = "Login to MAS";
-            this.login.UseVisualStyleBackColor = false;
-            this.login.Click += new System.EventHandler(this.login_Click);
-            // 
             // btnPrintSummary
             // 
             this.btnPrintSummary.BackColor = System.Drawing.Color.LightBlue;
@@ -235,18 +285,6 @@
             this.btnPrintSummary.Text = "Summary";
             this.btnPrintSummary.UseVisualStyleBackColor = false;
             this.btnPrintSummary.Click += new System.EventHandler(this.btnPrintSummary_Click);
-            // 
-            // label3
-            // 
-            this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label3.AutoSize = true;
-            this.label3.BackColor = System.Drawing.Color.Transparent;
-            this.label3.Location = new System.Drawing.Point(26, 548);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(142, 40);
-            this.label3.TabIndex = 9;
-            this.label3.Text = "Currently supports \r\ntables and chairs";
-            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // tabControl1
             // 
@@ -268,7 +306,7 @@
             this.tabPage1.Location = new System.Drawing.Point(4, 29);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(826, 546);
+            this.tabPage1.Size = new System.Drawing.Size(826, 530);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Tables";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -364,6 +402,22 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Print";
             // 
+            // btnPrintLabels
+            // 
+            this.btnPrintLabels.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.btnPrintLabels.BackColor = System.Drawing.Color.MediumSeaGreen;
+            this.btnPrintLabels.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.btnPrintLabels.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnPrintLabels.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPrintLabels.ForeColor = System.Drawing.Color.Black;
+            this.btnPrintLabels.Location = new System.Drawing.Point(222, 15);
+            this.btnPrintLabels.Name = "btnPrintLabels";
+            this.btnPrintLabels.Size = new System.Drawing.Size(102, 49);
+            this.btnPrintLabels.TabIndex = 22;
+            this.btnPrintLabels.Text = "Labels";
+            this.btnPrintLabels.UseVisualStyleBackColor = false;
+            this.btnPrintLabels.Click += new System.EventHandler(this.btnPrintLabels_Click);
+            // 
             // button1
             // 
             this.button1.BackColor = System.Drawing.Color.Aquamarine;
@@ -457,59 +511,6 @@
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
-            // 
-            // btn
-            // 
-            this.btn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(128)))));
-            this.btn.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btn.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btn.ForeColor = System.Drawing.Color.Black;
-            this.btn.Location = new System.Drawing.Point(6, 384);
-            this.btn.Name = "btn";
-            this.btn.Size = new System.Drawing.Size(188, 34);
-            this.btn.TabIndex = 21;
-            this.btn.Text = "Clear";
-            this.btn.UseVisualStyleBackColor = false;
-            this.btn.Click += new System.EventHandler(this.btnClearAll_Click);
-            // 
-            // btnPrintLabels
-            // 
-            this.btnPrintLabels.Anchor = System.Windows.Forms.AnchorStyles.Top;
-            this.btnPrintLabels.BackColor = System.Drawing.Color.MediumSeaGreen;
-            this.btnPrintLabels.FlatAppearance.BorderColor = System.Drawing.Color.White;
-            this.btnPrintLabels.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnPrintLabels.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPrintLabels.ForeColor = System.Drawing.Color.Black;
-            this.btnPrintLabels.Location = new System.Drawing.Point(222, 15);
-            this.btnPrintLabels.Name = "btnPrintLabels";
-            this.btnPrintLabels.Size = new System.Drawing.Size(102, 49);
-            this.btnPrintLabels.TabIndex = 22;
-            this.btnPrintLabels.Text = "Labels";
-            this.btnPrintLabels.UseVisualStyleBackColor = false;
-            this.btnPrintLabels.Click += new System.EventHandler(this.btnPrintLabels_Click);
-            // 
-            // button5
-            // 
-            this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(128)))));
-            this.button5.Location = new System.Drawing.Point(6, 344);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(188, 34);
-            this.button5.TabIndex = 16;
-            this.button5.Text = "Been Printed?";
-            this.button5.UseVisualStyleBackColor = false;
-            // 
-            // label1
-            // 
-            this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(30, 628);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(138, 26);
-            this.label1.TabIndex = 22;
-            this.label1.Text = "Powered by C#\r\nDeveloped by Gage Coates";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // Form1
             // 

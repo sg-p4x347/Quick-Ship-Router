@@ -28,7 +28,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,bool onlyPrinted)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -43,7 +43,7 @@ namespace Quick_Ship_Router
             while ((line = file.ReadLine()) != null && line != "")
             {
                 Traveler printedTraveler = new Traveler(line);
-                if (onlyPrinted)
+                if (mode == Mode.CreatePrinted)
                 {
                     // just add this traveler to the finished list
                     if (IsChair(printedTraveler.PartNo)) Travelers.Add(new Chair(line));
@@ -58,15 +58,18 @@ namespace Quick_Ship_Router
                             if (order.SalesOrderNo == printedOrder.SalesOrderNo)
                             {
                                 // throw this order out
-                                m_orders.Remove(order);
-                                break;
+                                if (mode != Mode.CreateSpecific)
+                                {
+                                    m_orders.Remove(order);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
             file.Close();
-            if (!onlyPrinted)
+            if (mode != Mode.CreatePrinted)
             {
                 //==========================================
                 // compile the travelers

@@ -20,6 +20,13 @@ using System.Drawing.Printing;
 
 namespace Quick_Ship_Router
 {
+    enum Mode
+    {
+        CreateSelected,
+        CreateUnselected,
+        CreateSpecific,
+        CreatePrinted
+    }
     public partial class Form1 : Form
     {
         public Form1()
@@ -52,13 +59,7 @@ namespace Quick_Ship_Router
             if (excelApp != null) Marshal.FinalReleaseComObject(excelApp);
         }
         // Properties
-        enum Mode
-        {
-            CreateSelected,
-            CreateUnselected,
-            CreateSpecific,
-            CreatePrinted
-        }
+        
         private Excel.Application excelApp;
         private Excel.Workbooks workbooks;
         private OdbcConnection MAS = new OdbcConnection();
@@ -121,8 +122,8 @@ namespace Quick_Ship_Router
             if (mode == Mode.CreatePrinted || ImportOrders(mode))
             {
                 // Create travelers
-                tableManager.CompileTravelers(backgroundWorker1, mode == Mode.CreatePrinted);
-                chairManager.CompileTravelers(backgroundWorker1, mode == Mode.CreatePrinted);
+                tableManager.CompileTravelers(backgroundWorker1, mode);
+                chairManager.CompileTravelers(backgroundWorker1, mode);
                 return true;
             }
             return false;
@@ -303,7 +304,7 @@ namespace Quick_Ship_Router
             InitializeManagers();
         }
         
-        // Add specific order
+        // Add specific order or traveler
         private void btnCreateSpecificOrder_Click(object sender, EventArgs e)
         {
             backgroundWorker1.RunWorkerAsync(Mode.CreateSpecific);
@@ -341,6 +342,52 @@ namespace Quick_Ship_Router
         private void btnClearAll_Click(object sender, EventArgs e)
         {
             Clear();
+        }
+        // Been Printed check
+        private bool HasBeenPrinted(string s)
+        {
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            bool foundMatch = false;
+            string line;
+            System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+            int travelerID = 0;
+            try
+            {
+                if (specificOrder.Text.Length < 7)
+                {
+                    travelerID = Convert.ToInt32(specificOrder.Text);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            while ((line = file.ReadLine()) != null && line != "")
+            {
+                Traveler printedTraveler = new Traveler(line);
+                // check to see if the number matches a traveler ID
+                if (travelerID == printedTraveler.ID)
+                {
+                    foundMatch = true;
+                    break;
+                }
+                // check to see if these orders have been printed already
+                foreach (Order printedOrder in printedTraveler.Orders)
+                {
+                    if (printedOrder.SalesOrderNo == specificOrder.Text)
+                    {
+                        foundMatch = true;
+                        break;
+                    }
+                }
+                if (foundMatch) break;
+            }
+            infoLabel.Text = (travelerID > 0 ? "Traveler " + travelerID.ToString("D6") : "Order " + specificOrder.Text) + (foundMatch ? " Has been printed" : " Has not been printed");
+            return false;
+        }
+        private void button5_Click(object sender, EventArgs e)
+        {
+            HasBeenPrinted(specificOrder.Text);
         }
     }
 }

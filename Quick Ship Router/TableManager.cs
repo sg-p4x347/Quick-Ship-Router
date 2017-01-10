@@ -34,7 +34,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,bool onlyPrinted)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -49,7 +49,7 @@ namespace Quick_Ship_Router
             while ((line = file.ReadLine()) != null && line != "")
             {
                 Traveler printedTraveler = new Traveler(line);
-                if (onlyPrinted)
+                if (mode == Mode.CreatePrinted)
                 {
                     // just add this traveler to the finished list
                     if (IsTable(printedTraveler.PartNo)) Travelers.Add(new Table(line));
@@ -64,15 +64,18 @@ namespace Quick_Ship_Router
                             if (order.SalesOrderNo == printedOrder.SalesOrderNo)
                             {
                                 // throw this order out
-                                m_orders.Remove(order);
-                                break;
+                                if (mode != Mode.CreateSpecific)
+                                {
+                                    m_orders.Remove(order);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
             file.Close();
-            if (!onlyPrinted)
+            if (mode != Mode.CreatePrinted)
             {
                 //==========================================
                 // compile the travelers
@@ -109,6 +112,42 @@ namespace Quick_Ship_Router
                 }
             }
             ImportInformation(backgroundWorker1);
+        }
+        private Traveler FindTraveler(string s)
+        {
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string line;
+            System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+            int travelerID = 0;
+            try
+            {
+                if (s.Length < 7)
+                {
+                    travelerID = Convert.ToInt32(s);
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            while ((line = file.ReadLine()) != null && line != "")
+            {
+                Traveler printedTraveler = new Traveler(line);
+                // check to see if the number matches a traveler ID
+                if (travelerID == printedTraveler.ID)
+                {
+                    return printedTraveler;
+                }
+                // check to see if these orders have been printed already
+                foreach (Order printedOrder in printedTraveler.Orders)
+                {
+                    if (printedOrder.SalesOrderNo == s)
+                    {
+                        return printedTraveler;
+                    }
+                }
+            }
+            return null;
         }
         private void ImportInformation(BackgroundWorker backgroundWorker1)
         { 
