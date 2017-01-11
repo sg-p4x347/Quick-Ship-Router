@@ -28,7 +28,7 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -43,29 +43,37 @@ namespace Quick_Ship_Router
             while ((line = file.ReadLine()) != null && line != "")
             {
                 Traveler printedTraveler = new Traveler(line);
-                if (mode == Mode.CreatePrinted)
+                switch (mode)
                 {
-                    // just add this traveler to the finished list
-                    if (IsChair(printedTraveler.PartNo)) Travelers.Add(new Chair(line));
-                }
-                else
-                {
-                    // check to see if these orders have been printed already
-                    foreach (Order printedOrder in printedTraveler.Orders)
-                    {
-                        foreach (Order order in m_orders)
+                    case Mode.CreatePrinted:
+                        // just add this traveler to the finished list
+                        if (IsChair(printedTraveler.PartNo)) Travelers.Add(new Chair(line));
+                        break;
+                    case Mode.CreateSpecific:
+                        if (printedTraveler.ID.ToString("D6") == specificID && IsChair(printedTraveler.PartNo))
                         {
-                            if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                            Travelers.Add(new Chair(line));
+                            break;
+                        }
+                        goto default;
+                    default:
+                        // check to see if these orders have been printed already
+                        foreach (Order printedOrder in printedTraveler.Orders)
+                        {
+                            foreach (Order order in m_orders)
                             {
-                                // throw this order out
-                                if (mode != Mode.CreateSpecific)
+                                if (order.SalesOrderNo == printedOrder.SalesOrderNo)
                                 {
-                                    m_orders.Remove(order);
-                                    break;
+                                    // throw this order out
+                                    if (mode != Mode.CreateSpecific)
+                                    {
+                                        m_orders.Remove(order);
+                                        break;
+                                    }
                                 }
                             }
                         }
-                    }
+                        break;
                 }
             }
             file.Close();
@@ -83,6 +91,7 @@ namespace Quick_Ship_Router
                     // search for existing traveler
                     foreach (Chair traveler in m_travelers)
                     {
+                        if (traveler.Part == null) traveler.ImportPart(MAS);
                         if (traveler.Part.BillNo == order.ItemCode)
                         {
                             // update existing traveler

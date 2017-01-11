@@ -20,7 +20,7 @@ namespace Quick_Ship_Router
     class TableManager
     {
         public TableManager() { }
-        public TableManager(OdbcConnection mas, Label infoLabel,ProgressBar progressBar, ListView listview, Excel.Worksheet crossRef, Excel.Worksheet boxRef, Excel.Worksheet blankRef, Excel.Worksheet colorRef)
+        public TableManager(OdbcConnection mas, Label infoLabel,ProgressBar progressBar, ListView listview, Excel.Worksheet crossRef, Excel.Worksheet boxRef, Excel.Worksheet blankRef, Excel.Worksheet colorRef, bool checkPrinted = true)
         {
             m_MAS = mas;
             m_infoLabel = infoLabel;
@@ -30,11 +30,12 @@ namespace Quick_Ship_Router
             m_boxRef = boxRef;
             m_blankRef = blankRef;
             m_colorRef = colorRef;
+            m_checkPrinted = checkPrinted;
         }
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID)
         {
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
@@ -44,42 +45,53 @@ namespace Quick_Ship_Router
             //==========================================
             // Remove any orders that have been printed
             //==========================================
-            string line;
-            System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
-            while ((line = file.ReadLine()) != null && line != "")
-            {
-                Traveler printedTraveler = new Traveler(line);
-                if (mode == Mode.CreatePrinted)
+            if (m_checkPrinted || mode == Mode.CreatePrinted) {
+                string line;
+                System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+                while ((line = file.ReadLine()) != null && line != "")
                 {
-                    // just add this traveler to the finished list
-                    if (IsTable(printedTraveler.PartNo)) Travelers.Add(new Table(line));
-                }
-                else
-                {
-                    // check to see if these orders have been printed already
-                    foreach (Order printedOrder in printedTraveler.Orders)
+                    Traveler printedTraveler = new Traveler(line);
+                    switch (mode)
                     {
-                        foreach (Order order in m_orders)
-                        {
-                            if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                        case Mode.CreatePrinted:
+                            // just add this traveler to the finished list
+                            if (IsTable(printedTraveler.PartNo)) Travelers.Add(new Table(line));
+                            break;
+                        case Mode.CreateSpecific:
+                            if (printedTraveler.ID.ToString("D6") == specificID && IsTable(printedTraveler.PartNo))
                             {
-                                // throw this order out
-                                if (mode != Mode.CreateSpecific)
+                                Travelers.Add(new Table(line));
+                                break;
+                            }
+                            goto default;
+                        default:
+                            // check to see if these orders have been printed already
+                            foreach (Order printedOrder in printedTraveler.Orders)
+                            {
+                                foreach (Order order in m_orders)
                                 {
-                                    m_orders.Remove(order);
-                                    break;
+                                    if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                                    {
+                                        // throw this order out
+                                        if (mode != Mode.CreateSpecific)
+                                        {
+                                            m_orders.Remove(order);
+                                            break;
+                                        }
+                                    }
                                 }
                             }
-                        }
+                            break;
                     }
                 }
+                file.Close();
             }
-            file.Close();
             if (mode != Mode.CreatePrinted)
             {
                 //==========================================
                 // compile the travelers
                 //==========================================
+                
                 int index = 0;
                 foreach (Order order in m_orders)
                 {
@@ -89,6 +101,7 @@ namespace Quick_Ship_Router
                     // search for existing traveler
                     foreach (Table traveler in m_travelers)
                     {
+                        if (traveler.Part == null) traveler.ImportPart(MAS);
                         if (traveler.Part.BillNo == order.ItemCode)
                         {
                             // update existing traveler
@@ -211,11 +224,54 @@ namespace Quick_Ship_Router
                 }
                 if (range != null) Marshal.ReleaseComObject(range);
             }
+
         }
         // Calculate how many will be left over + Blank Size
         private void GetBlankInfo(Table traveler) {
+            // find the Blank code in the color table
+            for (int crow = 2; crow < 27; crow++)
+            {
+                var colorRange = m_crossRef.get_Range("K" + crow, "M" + crow);
+                // find the correct color
+                if (Convert.ToInt32(colorRange.Item[1].Value2) == traveler.ColorNo)
+                {
+                    traveler.BlankColor = colorRange.Item[3].Value2;
+                    if (colorRange != null) Marshal.ReleaseComObject(colorRange);
+                    break;
+                }
+                if (colorRange != null) Marshal.ReleaseComObject(colorRange);
+            }
             for (int row = 2; row < 78; row++)
             {
+                var range = (Excel.Range)m_crossRef.get_Range("B" + row.ToString(), "F" + row.ToString());
+                // find the correct model number in the spreadsheet
+                if (range.Item[1].Value2 == traveler.ShapeNo)
+                {
+                    if (range.Item[3].Value2 == "Yes")
+                    {
+                        
+                        // check to see if there is a MAGR blank
+                        if (traveler.BlankColor == "MAGR" && range.Item[4].Value2 != null)
+                        {
+
+                            traveler.BlankNo = range.Item[4].Value2;
+                        }
+                        // check to see if there is a CHOK blank
+                        else if (traveler.BlankColor == "CHOK" && range.Item[5].Value2 != null)
+                        {
+
+                            traveler.BlankNo = range.Item[5].Value2;
+                        }
+                        // there are no available blanks
+                        else
+                        {
+                            traveler.BlankNo = "";
+                        }
+                    }
+                    if (range != null) Marshal.ReleaseComObject(range);
+                }
+                if (range != null) Marshal.ReleaseComObject(range);
+
                 var blankRange = m_blankRef.get_Range("A" + row.ToString(), "H" + row.ToString());
                 // find the correct model number in the spreadsheet
                 if (blankRange.Item[1].Value2 == traveler.ShapeNo)
@@ -225,8 +281,9 @@ namespace Quick_Ship_Router
                     if ((traveler.ShapeNo == "MG2247" || traveler.ShapeNo == "38-2247") && exceptionColors.IndexOf(traveler.ColorNo) != -1)
                     {
                         // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
-                        traveler.BlankSize = "(920x1532)";
-                        traveler.PartsPerBlank = 1;
+                        traveler.BlankSize = "(5X10) ~sheet";
+                        traveler.BlankNo = "";
+                        traveler.PartsPerBlank = 2;
                     }
                     else
                     {
@@ -247,7 +304,6 @@ namespace Quick_Ship_Router
                                 traveler.BlankSize = "No Blank";
                             }
                         }
-
                     }
                     // calculate production numbers
                     if (traveler.PartsPerBlank < 0) traveler.PartsPerBlank = 0;
@@ -260,51 +316,34 @@ namespace Quick_Ship_Router
                 if (blankRange != null) Marshal.ReleaseComObject(blankRange);
 
 
-                var range = (Excel.Range)m_crossRef.get_Range("B" + row.ToString(), "F" + row.ToString());
-                // find the correct model number in the spreadsheet
-                if (range.Item[1].Value2 == traveler.ShapeNo)
-                {
-                    if (range.Item[3].Value2 == "Yes")
-                    {
-                        string blankCode = "";
-                        // find the Blank code in the color table
-                        for (int crow = 2; crow < 19; crow++)
-                        {
-                            var colorRange = m_crossRef.get_Range("K" + crow, "M" + crow);
-                            // find the correct color
-                            if (Convert.ToInt32(colorRange.Item[1].Value2) == traveler.ColorNo)
-                            {
-                                blankCode = colorRange.Item[3].Value2;
-                                if (colorRange != null) Marshal.ReleaseComObject(colorRange);
-                                break;
-                            }
-                            if (colorRange != null) Marshal.ReleaseComObject(colorRange);
-                        }
-                        // check to see if there is a MAGR blank
-                        if (blankCode == "MAGR" && range.Item[4].Value2 != null)
-                        {
-
-                            traveler.BlankNo = range.Item[4].Value2;
-                        }
-                        // check to see if there is a CHOK blank
-                        else if (blankCode == "CHOK" && range.Item[5].Value2 != null)
-                        {
-
-                            traveler.BlankNo = range.Item[5].Value2;
-                        }
-                        // there are no available blanks
-                        else
-                        {
-                            traveler.BlankNo = "";
-                        }
-                    }
-                    if (range != null) Marshal.ReleaseComObject(range);
-                }
-                if (range != null) Marshal.ReleaseComObject(range);
+                
             }
             // subtract the inventory parts from the box quantity
             // router.RegPackQty = Math.Max(0, router.RegPackQty - ((router.RegPackQty + router.SupPackQty) - router.Quantity));
-            
+
+
+            // FROM MAS
+            // get bill information from MAS
+            //{
+            //    OdbcCommand command = MAS.CreateCommand();
+            //    command.CommandText = "SELECT CurrentBillRevision, Revision, BlkSize, BlkName, TablesPerBlank FROM BM_billHeader WHERE billno = '" + traveler.PartNo + "'";
+            //    OdbcDataReader reader = command.ExecuteReader();
+            //    // read info
+            //    while (reader.Read())
+            //    {
+            //        string currentRev = reader.GetString(0);
+            //        string thisRev = reader.GetString(1);
+            //        // only use the current bill revision
+            //        if (currentRev == thisRev) // if (current bill revision == this revision)
+            //        {
+            //            traveler.BlankSize = reader.GetString(2);
+            //            traveler.BlankNo = reader.GetString(3);
+            //            traveler.PartsPerBlank = Convert.ToInt32(reader.GetString(4));
+            //            break;
+            //        }
+            //    }
+            //    reader.Close();
+            //}
         }
         private bool IsTable(string s)
         {
@@ -587,6 +626,7 @@ namespace Quick_Ship_Router
         private Excel.Worksheet m_boxRef = null;
         private Excel.Worksheet m_blankRef = null;
         private Excel.Worksheet m_colorRef = null;
+        private bool m_checkPrinted = true;
         private List<Order> m_orders = new List<Order>();
         private List<Table> m_travelers = new List<Table>();
         private OdbcConnection m_MAS = new OdbcConnection();

@@ -192,7 +192,7 @@
             this.btnCreateSpecificOrder.Name = "btnCreateSpecificOrder";
             this.btnCreateSpecificOrder.Size = new System.Drawing.Size(188, 31);
             this.btnCreateSpecificOrder.TabIndex = 15;
-            this.btnCreateSpecificOrder.Text = "Add Order";
+            this.btnCreateSpecificOrder.Text = "Add Order / Traveler";
             this.btnCreateSpecificOrder.UseVisualStyleBackColor = false;
             this.btnCreateSpecificOrder.Click += new System.EventHandler(this.btnCreateSpecificOrder_Click);
             // 

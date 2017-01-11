@@ -11,3 +11,4 @@ C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick 
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick Ship Router.application
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick Ship Router.exe
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick Ship Router.pdb
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Release\Quick Ship Router.csprojResolveAssemblyReference.cache

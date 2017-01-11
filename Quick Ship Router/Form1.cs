@@ -116,14 +116,27 @@ namespace Quick_Ship_Router
                 customerList.Items.Add(customerNo, (customerNo == "AMAZOND" || customerNo == "WAYFAIR"));
             }
         }
-        private bool CreateTravelers(Mode mode)
+        private bool CreateTravelers(CreationParams cp)
         {
             // Import new orders
-            if (mode == Mode.CreatePrinted || ImportOrders(mode))
+            if (cp.mode == Mode.CreatePrinted || ImportOrders(cp.mode))
             {
+                // for a specific traveler ID
+                int travelerID = 0;
+                try
+                {
+                    if (specificOrder.Text.Length < 7)
+                    {
+                        travelerID = Convert.ToInt32(specificOrder.Text);
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                }
                 // Create travelers
-                tableManager.CompileTravelers(backgroundWorker1, mode);
-                chairManager.CompileTravelers(backgroundWorker1, mode);
+                tableManager.CompileTravelers(backgroundWorker1, cp.mode,travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
+                chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
                 return true;
             }
             return false;
@@ -289,13 +302,13 @@ namespace Quick_Ship_Router
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
             Clear();
-            backgroundWorker1.RunWorkerAsync(Mode.CreateSelected);
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateSelected, ""));
         }
         // Create Travelers(from unselected customers)
         private void btnInvertCustomers_Click(object sender, EventArgs e)
         {
             Clear();
-            backgroundWorker1.RunWorkerAsync(Mode.CreateUnselected);
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateUnselected, ""));
         }
         // Login to MAS
         private void login_Click(object sender, EventArgs e)
@@ -304,10 +317,20 @@ namespace Quick_Ship_Router
             InitializeManagers();
         }
         
+        struct CreationParams
+        {
+            public CreationParams(Mode m, string s)
+            {
+                mode = m;
+                specificID = s;
+            }
+            public Mode mode;
+            public string specificID;
+        }
         // Add specific order or traveler
         private void btnCreateSpecificOrder_Click(object sender, EventArgs e)
         {
-            backgroundWorker1.RunWorkerAsync(Mode.CreateSpecific);
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateSpecific,specificOrder.Text));
         }
 
         // Create only previously printed travelers
@@ -319,7 +342,7 @@ namespace Quick_Ship_Router
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
-                CreateTravelers((Mode)e.Argument);
+             CreateTravelers((CreationParams)e.Argument);
         }
 
         private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)

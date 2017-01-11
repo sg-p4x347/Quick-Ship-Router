@@ -49,6 +49,7 @@ namespace Quick_Ship_Router
         private string m_shapeNo = "";
         // Blank information
         private string m_blankNo = "";
+        private string m_blankColor = "";
         private string m_blankSize = "";
         private int m_partsPerBlank = 0;
         private int m_blankQuantity = 0;
@@ -142,6 +143,19 @@ namespace Quick_Ship_Router
             set
             {
                 m_leftoverParts = value;
+            }
+        }
+
+        public string BlankColor
+        {
+            get
+            {
+                return m_blankColor;
+            }
+
+            set
+            {
+                m_blankColor = value;
             }
         }
     }

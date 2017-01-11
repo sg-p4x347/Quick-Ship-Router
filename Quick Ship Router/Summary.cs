@@ -86,7 +86,7 @@ namespace Quick_Ship_Router
                 bool foundBlank = false;
                 for (int i = 0; i < blanks.Count; i++)
                 {
-                    if (blanks[i].size == table.BlankNo || blanks[i].size == table.BlankSize)
+                    if (blanks[i].size == table.BlankNo || blanks[i].size == table.BlankColor + " " + table.BlankSize)
                     {
                         blanks[i].quantity += table.BlankQuantity;
                         foundBlank = true;
@@ -94,7 +94,7 @@ namespace Quick_Ship_Router
                 }
                 if (!foundBlank)
                 {
-                    blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : table.BlankSize, table.BlankQuantity));
+                    blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : (table.BlankColor + " " + table.BlankSize), table.BlankQuantity));
                 }
                 // total work
                 totalCNC += table.Cnc.QuantityPerBill;
