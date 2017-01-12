@@ -504,7 +504,7 @@ namespace Quick_Ship_Router
                     row++;
                     // Regular pack
                     range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
+                    range.Item[1].Value2 = traveler.RegPack + (traveler.BoxItemCode != "" ? " Or box: " + traveler.BoxItemCode : "");
                     range.Item[2].Value2 = traveler.RegPackQty;
                     row++;
                     // Super pack
@@ -544,7 +544,7 @@ namespace Quick_Ship_Router
                     row++;
                     // Regular pack
                     range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
+                    range.Item[1].Value2 = traveler.RegPack + (traveler.BoxItemCode != "" ? " Or box: " + traveler.BoxItemCode : "");
                     range.Item[2].Value2 = traveler.RegPackQty;
                     row++;
                     // Super pack

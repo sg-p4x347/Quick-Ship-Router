@@ -144,10 +144,15 @@ namespace Quick_Ship_Router
         }
         private bool IsChair(string s)
         {
-            if (s.Substring(0, 2) == "38")
+            if (s.Length == 14 && s.Substring(0, 2) == "38")
             {
                 string[] parts = s.Split('-');
                 return (parts[0].Length == 5 && parts[1].Length == 4 && parts[2].Length == 3);
+            }
+            else if (s.Length == 15 && s.Substring(0, 4) == "MG11")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 6 && parts[1].Length == 4 && parts[2].Length == 3);
             }
             else
             {

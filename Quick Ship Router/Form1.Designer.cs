@@ -62,6 +62,8 @@
             this.button4 = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.btnCreateAll = new System.Windows.Forms.Button();
+            this.clearBefore = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -99,6 +101,9 @@
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.BackColor = System.Drawing.Color.LightGray;
+            this.groupBox1.Controls.Add(this.clearBefore);
+            this.groupBox1.Controls.Add(this.button4);
+            this.groupBox1.Controls.Add(this.button3);
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Controls.Add(this.btnCreatedPrinted);
             this.groupBox1.Controls.Add(this.login);
@@ -137,7 +142,7 @@
             this.btnCreatedPrinted.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(255)))));
             this.btnCreatedPrinted.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
             this.btnCreatedPrinted.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCreatedPrinted.Location = new System.Drawing.Point(6, 424);
+            this.btnCreatedPrinted.Location = new System.Drawing.Point(6, 507);
             this.btnCreatedPrinted.Name = "btnCreatedPrinted";
             this.btnCreatedPrinted.Size = new System.Drawing.Size(188, 34);
             this.btnCreatedPrinted.TabIndex = 16;
@@ -166,7 +171,7 @@
             this.btn.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btn.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btn.ForeColor = System.Drawing.Color.Black;
-            this.btn.Location = new System.Drawing.Point(6, 384);
+            this.btn.Location = new System.Drawing.Point(6, 467);
             this.btn.Name = "btn";
             this.btn.Size = new System.Drawing.Size(188, 34);
             this.btn.TabIndex = 21;
@@ -177,7 +182,7 @@
             // button5
             // 
             this.button5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(128)))));
-            this.button5.Location = new System.Drawing.Point(6, 344);
+            this.button5.Location = new System.Drawing.Point(6, 427);
             this.button5.Name = "button5";
             this.button5.Size = new System.Drawing.Size(188, 34);
             this.button5.TabIndex = 16;
@@ -188,7 +193,7 @@
             // btnCreateSpecificOrder
             // 
             this.btnCreateSpecificOrder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
-            this.btnCreateSpecificOrder.Location = new System.Drawing.Point(6, 307);
+            this.btnCreateSpecificOrder.Location = new System.Drawing.Point(6, 390);
             this.btnCreateSpecificOrder.Name = "btnCreateSpecificOrder";
             this.btnCreateSpecificOrder.Size = new System.Drawing.Size(188, 31);
             this.btnCreateSpecificOrder.TabIndex = 15;
@@ -200,7 +205,7 @@
             // 
             this.specificOrder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(128)))), ((int)(((byte)(255)))), ((int)(((byte)(128)))));
             this.specificOrder.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.specificOrder.Location = new System.Drawing.Point(6, 270);
+            this.specificOrder.Location = new System.Drawing.Point(6, 353);
             this.specificOrder.Name = "specificOrder";
             this.specificOrder.Size = new System.Drawing.Size(188, 26);
             this.specificOrder.TabIndex = 14;
@@ -210,7 +215,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(6, 247);
+            this.label4.Location = new System.Drawing.Point(6, 330);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(110, 20);
             this.label4.TabIndex = 13;
@@ -244,9 +249,9 @@
             // 
             this.customerList.BackColor = System.Drawing.Color.Wheat;
             this.customerList.FormattingEnabled = true;
-            this.customerList.Location = new System.Drawing.Point(6, 72);
+            this.customerList.Location = new System.Drawing.Point(6, 93);
             this.customerList.Name = "customerList";
-            this.customerList.Size = new System.Drawing.Size(188, 172);
+            this.customerList.Size = new System.Drawing.Size(188, 151);
             this.customerList.TabIndex = 7;
             // 
             // btnInvertCustomers
@@ -451,8 +456,7 @@
             // groupBox5
             // 
             this.groupBox5.BackColor = System.Drawing.Color.LightGray;
-            this.groupBox5.Controls.Add(this.button3);
-            this.groupBox5.Controls.Add(this.button4);
+            this.groupBox5.Controls.Add(this.btnCreateAll);
             this.groupBox5.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox5.ForeColor = System.Drawing.Color.Black;
             this.groupBox5.Location = new System.Drawing.Point(12, 12);
@@ -466,12 +470,11 @@
             // 
             this.button3.BackColor = System.Drawing.Color.Teal;
             this.button3.FlatAppearance.BorderColor = System.Drawing.Color.White;
-            this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button3.Font = new System.Drawing.Font("Impact", 14.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button3.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button3.ForeColor = System.Drawing.Color.Black;
-            this.button3.Location = new System.Drawing.Point(6, 15);
+            this.button3.Location = new System.Drawing.Point(6, 250);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(156, 50);
+            this.button3.Size = new System.Drawing.Size(188, 31);
             this.button3.TabIndex = 6;
             this.button3.Text = "Amazon / WF";
             this.button3.UseVisualStyleBackColor = false;
@@ -481,12 +484,11 @@
             // 
             this.button4.BackColor = System.Drawing.Color.MediumTurquoise;
             this.button4.FlatAppearance.BorderColor = System.Drawing.Color.White;
-            this.button4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.button4.Font = new System.Drawing.Font("Impact", 14.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button4.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F);
             this.button4.ForeColor = System.Drawing.Color.Black;
-            this.button4.Location = new System.Drawing.Point(168, 15);
+            this.button4.Location = new System.Drawing.Point(6, 287);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(156, 50);
+            this.button4.Size = new System.Drawing.Size(188, 31);
             this.button4.TabIndex = 12;
             this.button4.Text = "Everything else";
             this.button4.UseVisualStyleBackColor = false;
@@ -511,6 +513,33 @@
             this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
+            // 
+            // btnCreateAll
+            // 
+            this.btnCreateAll.BackColor = System.Drawing.Color.MediumTurquoise;
+            this.btnCreateAll.FlatAppearance.BorderColor = System.Drawing.Color.White;
+            this.btnCreateAll.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCreateAll.Font = new System.Drawing.Font("Impact", 21.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCreateAll.ForeColor = System.Drawing.Color.Black;
+            this.btnCreateAll.Location = new System.Drawing.Point(10, 17);
+            this.btnCreateAll.Name = "btnCreateAll";
+            this.btnCreateAll.Size = new System.Drawing.Size(314, 49);
+            this.btnCreateAll.TabIndex = 23;
+            this.btnCreateAll.Text = "Everything";
+            this.btnCreateAll.UseVisualStyleBackColor = false;
+            this.btnCreateAll.Click += new System.EventHandler(this.btnCreateAll_Click);
+            // 
+            // clearBefore
+            // 
+            this.clearBefore.AutoSize = true;
+            this.clearBefore.Checked = true;
+            this.clearBefore.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.clearBefore.Location = new System.Drawing.Point(9, 64);
+            this.clearBefore.Name = "clearBefore";
+            this.clearBefore.Size = new System.Drawing.Size(174, 24);
+            this.clearBefore.TabIndex = 23;
+            this.clearBefore.Text = "Clear before new set";
+            this.clearBefore.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -581,6 +610,8 @@
         private System.Windows.Forms.Button btnPrintLabels;
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button btnCreateAll;
+        private System.Windows.Forms.CheckBox clearBefore;
     }
 }
 

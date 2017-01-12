@@ -25,7 +25,8 @@ namespace Quick_Ship_Router
         CreateSelected,
         CreateUnselected,
         CreateSpecific,
-        CreatePrinted
+        CreatePrinted,
+        CreateAll,
     }
     public partial class Form1 : Form
     {
@@ -175,14 +176,15 @@ namespace Quick_Ship_Router
             sortInfo = mode == Mode.CreateSelected ? "(" + displayNames + ")" : "";
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
-            command.CommandText = "SELECT SalesOrderNo, ShipExpireDate, CustomerNo, ShipVia FROM SO_SalesOrderHeader WHERE " + (mode == Mode.CreateSpecific ? "SalesOrderNo = '" + specificOrder.Text + "'" : "CustomerNo " + (mode == Mode.CreateUnselected ? "NOT" : "") + " IN (" + customerNames + ")" + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
+            string conditions = (mode == Mode.CreateSpecific ? "SalesOrderNo = '" + specificOrder.Text + "'" : (customerNames.Length != 0 && mode != Mode.CreateAll ? ("CustomerNo " + (mode == Mode.CreateUnselected ? "NOT" : "") + " IN (" + customerNames + ")") : "") + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
+            command.CommandText = "SELECT SalesOrderNo, CustomerNo, ShipVia FROM SO_SalesOrderHeader" + (conditions.Length > 0 ? " WHERE " + conditions : "");
             OdbcDataReader reader = command.ExecuteReader();
             // read info
             while (reader.Read())
             {
                 // get information from detail
                 OdbcCommand detailCommand = MAS.CreateCommand();
-                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
+                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure, PromiseDate FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
                 while (detailReader.Read())
@@ -196,37 +198,55 @@ namespace Quick_Ship_Router
                             // this is a table
                             Order order = new Order();
                             // scrap this order if anything is missing
-                            if (reader.IsDBNull(0)) continue;
-                            order.SalesOrderNo = reader.GetString(0);
-                            if (reader.IsDBNull(1)) continue;
-                            order.OrderDate = reader.GetDate(1);
-                            if (reader.IsDBNull(2)) continue;
-                            order.CustomerNo = reader.GetString(2);
-                            if (reader.IsDBNull(3)) continue;
-                            order.ShipVia = reader.GetString(3);
+                            if (!reader.IsDBNull(0))
+                            {
+                                order.SalesOrderNo = reader.GetString(0);
+                            }
+                            if (!detailReader.IsDBNull(3))
+                            {
+                                order.OrderDate = detailReader.GetDate(3);
+                            }
+
+                            if (!reader.IsDBNull(1))
+                            {
+                                order.CustomerNo = reader.GetString(1);
+                            }
+
+                            if (!reader.IsDBNull(2))
+                            {
+                                order.ShipVia = reader.GetString(2);
+                            }
 
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             tableManager.Orders.Add(order);
-                            continue;
                         } else if (IsChair(billCode))
                         {
                             // this is a table
                             Order order = new Order();
                             // scrap this order if anything is missing
-                            if (reader.IsDBNull(0)) continue;
-                            order.SalesOrderNo = reader.GetString(0);
-                            if (reader.IsDBNull(1)) continue;
-                            order.OrderDate = reader.GetDate(1);
-                            if (reader.IsDBNull(2)) continue;
-                            order.CustomerNo = reader.GetString(2);
-                            if (reader.IsDBNull(3)) continue;
-                            order.ShipVia = reader.GetString(3);
+                            if (!reader.IsDBNull(0))
+                            {
+                                order.SalesOrderNo = reader.GetString(0);
+                            }
+                            if (!detailReader.IsDBNull(3))
+                            {
+                                order.OrderDate = detailReader.GetDate(3);
+                            }
+                            
+                            if (!reader.IsDBNull(1))
+                            {
+                                order.CustomerNo = reader.GetString(1);
+                            }
+                            
+                            if (!reader.IsDBNull(2))
+                            {
+                                order.ShipVia = reader.GetString(2);
+                            }
 
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             chairManager.Orders.Add(order);
-                            continue;
                         }
 
                     }
@@ -243,16 +263,23 @@ namespace Quick_Ship_Router
         }
         private bool IsChair(string s)
         {
-            if (s.Substring(0,2) == "38")
+            if (s.Length == 14 && s.Substring(0, 2) == "38")
             {
                 string[] parts = s.Split('-');
                 return (parts[0].Length == 5 && parts[1].Length == 4 && parts[2].Length == 3);
-            } else
+            }
+            else if (s.Length == 15 && s.Substring(0, 4) == "MG11")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 6 && parts[1].Length == 4 && parts[2].Length == 3);
+            }
+            else
             {
                 return false;
             }
-            
+
         }
+
         //======================
         // Tables
         //======================
@@ -301,13 +328,13 @@ namespace Quick_Ship_Router
         // Create Travelers (from selected customers)
         private void btnCreateTravelers_Click(object sender, EventArgs e)
         {
-            Clear();
+            if (clearBefore.Checked) Clear();
             backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateSelected, ""));
         }
         // Create Travelers(from unselected customers)
         private void btnInvertCustomers_Click(object sender, EventArgs e)
         {
-            Clear();
+            if (clearBefore.Checked) Clear();
             backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateUnselected, ""));
         }
         // Login to MAS
@@ -336,8 +363,8 @@ namespace Quick_Ship_Router
         // Create only previously printed travelers
         private void btnCreatedPrinted_Click(object sender, EventArgs e)
         {
-            Clear();
-            backgroundWorker1.RunWorkerAsync(Mode.CreatePrinted);
+            if (clearBefore.Checked) Clear();
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreatePrinted, ""));
         }
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
@@ -411,6 +438,12 @@ namespace Quick_Ship_Router
         private void button5_Click(object sender, EventArgs e)
         {
             HasBeenPrinted(specificOrder.Text);
+        }
+
+        private void btnCreateAll_Click(object sender, EventArgs e)
+        {
+            if (clearBefore.Checked) Clear();
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateAll, ""));
         }
     }
 }
