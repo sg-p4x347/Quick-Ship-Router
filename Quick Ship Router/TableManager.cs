@@ -610,7 +610,7 @@ namespace Quick_Ship_Router
 
                     var content = new FormUrlEncodedContent(values);
 
-                    var response = await client.PostAsync("http://192.168.2.6/", content);
+                    var response = await client.PostAsync("http://192.168.2.6:8080/", content);
 
                     var responseString = await response.Content.ReadAsStringAsync();
                 }

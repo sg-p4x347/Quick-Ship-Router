@@ -76,39 +76,44 @@ namespace Quick_Ship_Router
             sortInfo = sort;
             // date
             date = DateTime.Today.ToString("MM/dd/yyyy");
-            foreach (Table table in tables)
+            if (tables != null)
             {
-                totalTables += table.Quantity;
-                totalTravelers++;
-                // create the summary item
-                CreateSummaryItem(table);
-                // tally blanks
-                bool foundBlank = false;
-                for (int i = 0; i < blanks.Count; i++)
+                foreach (Table table in tables)
                 {
-                    if (blanks[i].size == table.BlankNo || blanks[i].size == table.BlankColor + " " + table.BlankSize)
+                    totalTables += table.Quantity;
+                    totalTravelers++;
+                    // create the summary item
+                    CreateSummaryItem(table);
+                    // tally blanks
+                    bool foundBlank = false;
+                    for (int i = 0; i < blanks.Count; i++)
                     {
-                        blanks[i].quantity += table.BlankQuantity;
-                        foundBlank = true;
+                        if (blanks[i].size == table.BlankNo || blanks[i].size == table.BlankColor + " " + table.BlankSize)
+                        {
+                            blanks[i].quantity += table.BlankQuantity;
+                            foundBlank = true;
+                        }
                     }
+                    if (!foundBlank)
+                    {
+                        blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : (table.BlankColor + " " + table.BlankSize), table.BlankQuantity));
+                    }
+                    // total work
+                    totalCNC += table.Cnc.QuantityPerBill;
+                    totalVector += table.Vector.QuantityPerBill;
+                    totalPack += table.Assm.QuantityPerBill;
                 }
-                if (!foundBlank)
-                {
-                    blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : (table.BlankColor + " " + table.BlankSize), table.BlankQuantity));
-                }
-                // total work
-                totalCNC += table.Cnc.QuantityPerBill;
-                totalVector += table.Vector.QuantityPerBill;
-                totalPack += table.Assm.QuantityPerBill;
             }
-            foreach (Chair chair in chairs)
+            if (chairs != null)
             {
-                totalChairs += chair.Quantity;
-                totalTravelers++;
-                // create the summary item
-                CreateSummaryItem(chair);
+                foreach (Chair chair in chairs)
+                {
+                    totalChairs += chair.Quantity;
+                    totalTravelers++;
+                    // create the summary item
+                    CreateSummaryItem(chair);
+                }
             }
-
             //####################
             // SORT BY ORDER
             //####################
@@ -164,14 +169,14 @@ namespace Quick_Ship_Router
             var summarySheet = (Excel.Worksheet)worksheets.get_Item("Summary Template");
             // date
             Excel.Range title = summarySheet.get_Range("A1", "A1");
-            title.Value2 = sortInfo + " Traveler Summary for " + date + (printed ? " " + "[COPY]" : "");
+            title.Value2 = sortInfo + " Summary for " + date + (printed ? " " + "[COPY]" : "");
             Marshal.ReleaseComObject(title);
             // totals
             Excel.Range travelerTotal = summarySheet.get_Range("A2", "A2");
-            travelerTotal.Value2 = totalTravelers;
+            travelerTotal.Value2 = totalTravelers + " Travelers";
             Marshal.ReleaseComObject(travelerTotal);
             Excel.Range partTotal = summarySheet.get_Range("C2", "C2");
-            partTotal.Value2 = totalTables + " tables, " + totalChairs + " chairs";
+            partTotal.Value2 = (totalTables > 0 ? totalTables + " tables ": "") + (totalChairs > 0 ? totalChairs + " chairs": "");
             Marshal.ReleaseComObject(partTotal);
             // print items
             int row = 4;
@@ -190,39 +195,51 @@ namespace Quick_Ship_Router
                 // increment row
                 row++;
             }
-            
-            // print blank summary
-            var totals = (Excel.Worksheet)worksheets.get_Item("Totals");
-            row = 4;
-            foreach (BlankItem blank in blanks)
+
+            if (totalTables > 0)
             {
-                Excel.Range range = totals.get_Range("A" + row, "B" + row);
-                range.Item[1].Value2 = blank.size;
-                range.Item[2].Value2 = blank.quantity;
-                // clean up range
-                Marshal.ReleaseComObject(range);
-                // increment row
-                row++;
+                // print blank summary
+                var totals = (Excel.Worksheet)worksheets.get_Item("Totals");
+                row = 4;
+                foreach (BlankItem blank in blanks)
+                {
+                    Excel.Range range = totals.get_Range("A" + row, "B" + row);
+                    range.Item[1].Value2 = blank.size;
+                    range.Item[2].Value2 = blank.quantity;
+                    // clean up range
+                    Marshal.ReleaseComObject(range);
+                    // increment row
+                    row++;
+                }
+                // work totals
+                Excel.Range cnc = totals.get_Range("E4", "E4");
+                cnc.Value2 = totalCNC;
+                Marshal.ReleaseComObject(cnc);
+                Excel.Range vector = totals.get_Range("E5", "E5");
+                vector.Value2 = totalVector;
+                Marshal.ReleaseComObject(vector);
+                Excel.Range pack = totals.get_Range("E6", "E6");
+                pack.Value2 = totalPack;
+                Marshal.ReleaseComObject(pack);
+                try
+                {
+                    //##### Print Blank Total Sheet #######
+                    totals.PrintOut(
+                        Type.Missing, Type.Missing, Type.Missing, Type.Missing,
+                        Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+                    //###################################
+                    printed = true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("A problem occured when printing the Totals sheet: " + ex.Message);
+                }
+                Marshal.ReleaseComObject(totals);
             }
-            // work totals
-            Excel.Range cnc = totals.get_Range("E4","E4");
-            cnc.Value2 = totalCNC;
-            Marshal.ReleaseComObject(cnc);
-            Excel.Range vector = totals.get_Range("E5", "E5");
-            vector.Value2 = totalVector;
-            Marshal.ReleaseComObject(vector);
-            Excel.Range pack = totals.get_Range("E6", "E6");
-            pack.Value2 = totalPack;
-            Marshal.ReleaseComObject(pack);
             try
             {
                 //##### Print Summary Sheet #######
                 summarySheet.PrintOut(
-                    Type.Missing, Type.Missing, Type.Missing, Type.Missing,
-                    Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-                //###################################
-                //##### Print Blank Total Sheet #######
-                totals.PrintOut(
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing,
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing);
                 //###################################
@@ -234,7 +251,6 @@ namespace Quick_Ship_Router
             }
             // clean up excel objects
             Marshal.ReleaseComObject(summarySheet);
-            Marshal.ReleaseComObject(totals);
             Marshal.ReleaseComObject(worksheets);
         }
         // Properties

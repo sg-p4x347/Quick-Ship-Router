@@ -177,14 +177,14 @@ namespace Quick_Ship_Router
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
             string conditions = (mode == Mode.CreateSpecific ? "SalesOrderNo = '" + specificOrder.Text + "'" : (customerNames.Length != 0 && mode != Mode.CreateAll ? ("CustomerNo " + (mode == Mode.CreateUnselected ? "NOT" : "") + " IN (" + customerNames + ")") : "") + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
-            command.CommandText = "SELECT SalesOrderNo, CustomerNo, ShipVia FROM SO_SalesOrderHeader" + (conditions.Length > 0 ? " WHERE " + conditions : "");
+            command.CommandText = "SELECT SalesOrderNo, CustomerNo, ShipVia, ShipExpireDate FROM SO_SalesOrderHeader" + (conditions.Length > 0 ? " WHERE " + conditions : "");
             OdbcDataReader reader = command.ExecuteReader();
             // read info
             while (reader.Read())
             {
                 // get information from detail
                 OdbcCommand detailCommand = MAS.CreateCommand();
-                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure, PromiseDate FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
+                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
                 while (detailReader.Read())
@@ -202,11 +202,6 @@ namespace Quick_Ship_Router
                             {
                                 order.SalesOrderNo = reader.GetString(0);
                             }
-                            if (!detailReader.IsDBNull(3))
-                            {
-                                order.OrderDate = detailReader.GetDate(3);
-                            }
-
                             if (!reader.IsDBNull(1))
                             {
                                 order.CustomerNo = reader.GetString(1);
@@ -215,6 +210,10 @@ namespace Quick_Ship_Router
                             if (!reader.IsDBNull(2))
                             {
                                 order.ShipVia = reader.GetString(2);
+                            }
+                            if (!reader.IsDBNull(3))
+                            {
+                                order.OrderDate = reader.GetDate(3);
                             }
 
                             order.ItemCode = billCode;
@@ -229,19 +228,17 @@ namespace Quick_Ship_Router
                             {
                                 order.SalesOrderNo = reader.GetString(0);
                             }
-                            if (!detailReader.IsDBNull(3))
-                            {
-                                order.OrderDate = detailReader.GetDate(3);
-                            }
-                            
                             if (!reader.IsDBNull(1))
                             {
                                 order.CustomerNo = reader.GetString(1);
                             }
-                            
                             if (!reader.IsDBNull(2))
                             {
                                 order.ShipVia = reader.GetString(2);
+                            }
+                            if (!reader.IsDBNull(3))
+                            {
+                                order.OrderDate = reader.GetDate(3);
                             }
 
                             order.ItemCode = billCode;
@@ -312,7 +309,7 @@ namespace Quick_Ship_Router
         {
             if (summary == null)
             {
-                summary = new Summary(tableManager.Travelers, chairManager.Travelers, sortInfo);
+                summary = new Summary(chckTables.Checked ? tableManager.Travelers : null, chckChairs.Checked ? chairManager.Travelers : null, sortInfo + (chckTables.Checked ? " Table " : "") + (chckChairs.Checked ? " Chair " : ""));
                 summary.Print(workbooks);
             } else
             {
@@ -323,7 +320,7 @@ namespace Quick_Ship_Router
         // Print labels
         private void btnPrintLabels_Click(object sender, EventArgs e)
         {
-
+            tableManager.PrintLabels();
         }
         // Create Travelers (from selected customers)
         private void btnCreateTravelers_Click(object sender, EventArgs e)
