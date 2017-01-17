@@ -60,8 +60,8 @@
             this.btnCreateAll = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.chckTables = new System.Windows.Forms.CheckBox();
-            this.chckChairs = new System.Windows.Forms.CheckBox();
+            this.chckTables = new System.Windows.Forms.RadioButton();
+            this.chckChairs = new System.Windows.Forms.RadioButton();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -375,7 +375,7 @@
             this.infoLabel.BackColor = System.Drawing.Color.Transparent;
             this.infoLabel.Font = new System.Drawing.Font("Monotype Corsiva", 27.75F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.infoLabel.ForeColor = System.Drawing.Color.Cyan;
-            this.infoLabel.Location = new System.Drawing.Point(759, 39);
+            this.infoLabel.Location = new System.Drawing.Point(758, 39);
             this.infoLabel.Name = "infoLabel";
             this.infoLabel.Size = new System.Drawing.Size(153, 45);
             this.infoLabel.TabIndex = 3;
@@ -385,28 +385,27 @@
             // 
             this.groupBox4.BackColor = System.Drawing.Color.LightGray;
             this.groupBox4.Controls.Add(this.chckChairs);
-            this.groupBox4.Controls.Add(this.btnPrintLabels);
             this.groupBox4.Controls.Add(this.chckTables);
+            this.groupBox4.Controls.Add(this.btnPrintLabels);
             this.groupBox4.Controls.Add(this.button1);
             this.groupBox4.Controls.Add(this.button2);
             this.groupBox4.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox4.ForeColor = System.Drawing.Color.Black;
             this.groupBox4.Location = new System.Drawing.Point(349, 12);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(404, 72);
+            this.groupBox4.Size = new System.Drawing.Size(403, 72);
             this.groupBox4.TabIndex = 18;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Print";
             // 
             // btnPrintLabels
             // 
-            this.btnPrintLabels.Anchor = System.Windows.Forms.AnchorStyles.Top;
             this.btnPrintLabels.BackColor = System.Drawing.Color.MediumSeaGreen;
             this.btnPrintLabels.FlatAppearance.BorderColor = System.Drawing.Color.White;
             this.btnPrintLabels.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnPrintLabels.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnPrintLabels.ForeColor = System.Drawing.Color.Black;
-            this.btnPrintLabels.Location = new System.Drawing.Point(222, 15);
+            this.btnPrintLabels.Location = new System.Drawing.Point(222, 16);
             this.btnPrintLabels.Name = "btnPrintLabels";
             this.btnPrintLabels.Size = new System.Drawing.Size(102, 49);
             this.btnPrintLabels.TabIndex = 22;
@@ -496,23 +495,21 @@
             // 
             this.chckTables.AutoSize = true;
             this.chckTables.Checked = true;
-            this.chckTables.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chckTables.Location = new System.Drawing.Point(330, 24);
+            this.chckTables.Location = new System.Drawing.Point(330, 19);
             this.chckTables.Name = "chckTables";
-            this.chckTables.Size = new System.Drawing.Size(70, 20);
-            this.chckTables.TabIndex = 24;
+            this.chckTables.Size = new System.Drawing.Size(69, 20);
+            this.chckTables.TabIndex = 26;
+            this.chckTables.TabStop = true;
             this.chckTables.Text = "Tables";
             this.chckTables.UseVisualStyleBackColor = true;
             // 
             // chckChairs
             // 
             this.chckChairs.AutoSize = true;
-            this.chckChairs.Checked = true;
-            this.chckChairs.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chckChairs.Location = new System.Drawing.Point(330, 41);
             this.chckChairs.Name = "chckChairs";
-            this.chckChairs.Size = new System.Drawing.Size(65, 20);
-            this.chckChairs.TabIndex = 25;
+            this.chckChairs.Size = new System.Drawing.Size(64, 20);
+            this.chckChairs.TabIndex = 27;
             this.chckChairs.Text = "Chairs";
             this.chckChairs.UseVisualStyleBackColor = true;
             // 
@@ -581,8 +578,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnCreateAll;
         private System.Windows.Forms.CheckBox clearBefore;
-        private System.Windows.Forms.CheckBox chckChairs;
-        private System.Windows.Forms.CheckBox chckTables;
+        private System.Windows.Forms.RadioButton chckChairs;
+        private System.Windows.Forms.RadioButton chckTables;
     }
 }
 

@@ -70,7 +70,7 @@ namespace Quick_Ship_Router
                             {
                                 foreach (Order order in m_orders)
                                 {
-                                    if (order.SalesOrderNo == printedOrder.SalesOrderNo)
+                                    if (order.SalesOrderNo == printedOrder.SalesOrderNo && order.ItemCode == printedOrder.ItemCode)
                                     {
                                         // throw this order out
                                         if (mode != Mode.CreateSpecific)

@@ -11,4 +11,3 @@ C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Sh
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.exe.manifest
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Quick Ship Router.application
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.application
-C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.csprojResolveAssemblyReference.cache

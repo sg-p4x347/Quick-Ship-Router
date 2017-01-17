@@ -187,6 +187,10 @@ namespace Quick_Ship_Router
                 detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
+                if (reader.GetString(0) == "5034477")
+                {
+                    var test = "test";
+                }
                 while (detailReader.Read())
                 {
                     // Import bill & quantity 
@@ -206,7 +210,6 @@ namespace Quick_Ship_Router
                             {
                                 order.CustomerNo = reader.GetString(1);
                             }
-
                             if (!reader.IsDBNull(2))
                             {
                                 order.ShipVia = reader.GetString(2);
@@ -315,7 +318,6 @@ namespace Quick_Ship_Router
             {
                 summary.Print(workbooks);
             }
-            
         }
         // Print labels
         private void btnPrintLabels_Click(object sender, EventArgs e)
