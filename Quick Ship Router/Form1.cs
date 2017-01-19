@@ -304,8 +304,8 @@ namespace Quick_Ship_Router
                 true, false, 0, true, false, false);
             var worksheets = workbook.Worksheets;
 
-            tableManager.PrintTravelers(worksheets);
-            chairManager.PrintTravelers(worksheets);
+            if (chckTables.Checked) tableManager.PrintTravelers(worksheets);
+            if (chckChairs.Checked) chairManager.PrintTravelers(worksheets);
         }
         // Print summary
         private void btnPrintSummary_Click(object sender, EventArgs e)
