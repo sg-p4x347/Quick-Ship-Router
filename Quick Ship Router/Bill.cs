@@ -123,6 +123,8 @@ namespace Quick_Ship_Router
         private string m_currentBillRevision;
         
         private string m_unit;
+        // for traveler unraveler
+        private string m_group;
         // components
         private List<Item> m_componentItems = new List<Item>();
         private List<Bill> m_componentBills = new List<Bill>();
@@ -280,6 +282,19 @@ namespace Quick_Ship_Router
             set
             {
                 m_totalQuantity = value;
+            }
+        }
+
+        public string Group
+        {
+            get
+            {
+                return m_group;
+            }
+
+            set
+            {
+                m_group = value;
             }
         }
     }

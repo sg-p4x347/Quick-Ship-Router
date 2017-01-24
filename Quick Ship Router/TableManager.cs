@@ -13,6 +13,7 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
+using System.Net;
 using System.Net.Http;
 
 namespace Quick_Ship_Router
@@ -600,19 +601,11 @@ namespace Quick_Ship_Router
         async public void PrintLabels()
         {
             foreach (Table table in m_travelers) {
-                using (var client = new HttpClient())
+                string result = "";
+                using (var client = new WebClient())
                 {
-                    var values = new Dictionary<string, string>
-                    {
-                       { "Unit", table.PartNo },
-                       { "Quantity", table.Quantity.ToString() }
-                    };
-
-                    var content = new FormUrlEncodedContent(values);
-
-                    var response = await client.PostAsync("http://192.168.2.6:8080/", content);
-
-                    var responseString = await response.Content.ReadAsStringAsync();
+                    client.Headers[HttpRequestHeader.ContentType] = "application/json";
+                    result = client.UploadString(@"http://192.168.2.6:8080/printLabel", "POST", @"{""field"":""Value""");
                 }
             }
         }

@@ -8,7 +8,7 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
-
+using tuTraveler = Traveler_Unraveler.Traveler;
 namespace Quick_Ship_Router
 {
     class Summary
@@ -70,7 +70,7 @@ namespace Quick_Ship_Router
             public List<string> orderDates;
             public List<string> customers;
         }
-        public Summary(List<Table> tables, List<Chair> chairs, string sort)
+        public Summary(List<Table> tables, List<Chair> chairs, List<tuTraveler> misc, string sort)
         {
             // sort information
             sortInfo = sort;
@@ -112,6 +112,14 @@ namespace Quick_Ship_Router
                     totalTravelers++;
                     // create the summary item
                     CreateSummaryItem(chair);
+                }
+            }
+            if (misc != null)
+            {
+                foreach (tuTraveler traveler in misc)
+                {
+                    totalTravelers++;
+                    CreateSummaryItem(traveler);
                 }
             }
             //####################
@@ -156,6 +164,14 @@ namespace Quick_Ship_Router
                 item.orderDates.Add(order.OrderDate.ToString("MM/dd/yyyy"));
                 item.customers.Add(order.CustomerNo);
             }
+            items.Add(item);
+        }
+        private void CreateSummaryItem(tuTraveler traveler)
+        {
+            SummaryItem item = new SummaryItem(traveler.GetProject(), traveler.GetPart().BillNo, Convert.ToInt32(traveler.GetPart().QuantityPerBill), traveler.GetPart().BillDesc);
+            item.orderNums.Add(traveler.Order.SalesOrderNo);
+            item.orderDates.Add(traveler.Order.OrderDate.ToString("MM/dd/yyyy"));
+            item.customers.Add(traveler.Order.CustomerNo);
             items.Add(item);
         }
         public void Print(Excel.Workbooks workbooks)

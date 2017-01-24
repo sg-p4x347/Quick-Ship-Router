@@ -17,6 +17,7 @@ using System.IO;
 using Excel = Microsoft.Office.Interop.Excel;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
+using TravelerUnraveler = Traveler_Unraveler.TravelerUnraveler;
 
 namespace Quick_Ship_Router
 {
@@ -73,7 +74,7 @@ namespace Quick_Ship_Router
             MAS = new OdbcConnection();
             // initialize the MAS connection
             MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;";
-            //MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347;";
+            MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347;";
             try
             {
                 MAS.Open();
@@ -81,7 +82,7 @@ namespace Quick_Ship_Router
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to log in :(");
+                MessageBox.Show("Failed to log in :" + ex.Message);
             }
             infoLabel.Text = "";
         }
@@ -104,6 +105,7 @@ namespace Quick_Ship_Router
 
             tableManager = new TableManager(MAS, infoLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
             chairManager = new ChairManager(MAS, infoLabel, progressBar, chairListView);
+            travelerUnraveler = new TravelerUnraveler(MAS, "Standup Desks");
         }
         // Fill the customer list with customers
         private void PopulateCustomers()
@@ -138,6 +140,7 @@ namespace Quick_Ship_Router
                 // Create travelers
                 tableManager.CompileTravelers(backgroundWorker1, cp.mode,travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
                 chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
+                travelerUnraveler.CreateTravelers();
                 return true;
             }
             return false;
@@ -187,10 +190,7 @@ namespace Quick_Ship_Router
                 detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
-                if (reader.GetString(0) == "5034477")
-                {
-                    var test = "test";
-                }
+
                 while (detailReader.Read())
                 {
                     // Import bill & quantity 
@@ -247,6 +247,31 @@ namespace Quick_Ship_Router
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             chairManager.Orders.Add(order);
+                        } else if (IsBackPanel(billCode))
+                        {
+                            // this is probably a back panel for an apex standup desk
+                            Order order = new Order();
+                            // scrap this order if anything is missing
+                            if (!reader.IsDBNull(0))
+                            {
+                                order.SalesOrderNo = reader.GetString(0);
+                            }
+                            if (!reader.IsDBNull(1))
+                            {
+                                order.CustomerNo = reader.GetString(1);
+                            }
+                            if (!reader.IsDBNull(2))
+                            {
+                                order.ShipVia = reader.GetString(2);
+                            }
+                            if (!reader.IsDBNull(3))
+                            {
+                                order.OrderDate = reader.GetDate(3);
+                            }
+                            order.ItemCode = billCode;
+                            order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
+                            travelerUnraveler.AddOrder(order);
+                            return true;
                         }
 
                     }
@@ -279,7 +304,16 @@ namespace Quick_Ship_Router
             }
 
         }
-
+        private bool IsBackPanel(string s)
+        {
+            if (s.Substring(0,2) == "32")
+            {
+                return true;
+            } else
+            {
+                return false;
+            }
+        }
         //======================
         // Tables
         //======================
@@ -288,6 +322,10 @@ namespace Quick_Ship_Router
         // Chairs
         //======================
         private ChairManager chairManager = new ChairManager();
+        //======================
+        // Misc Travelers
+        //======================
+        private TravelerUnraveler travelerUnraveler;
         //======================
         // Events
         //======================
@@ -304,15 +342,22 @@ namespace Quick_Ship_Router
                 true, false, 0, true, false, false);
             var worksheets = workbook.Worksheets;
 
-            if (chckTables.Checked) tableManager.PrintTravelers(worksheets);
-            if (chckChairs.Checked) chairManager.PrintTravelers(worksheets);
+            if (chckTables.Checked)
+            {
+                tableManager.PrintTravelers(worksheets);
+                travelerUnraveler.Print();
+            }
+            if (chckChairs.Checked)
+            {
+                chairManager.PrintTravelers(worksheets);
+            }
         }
         // Print summary
         private void btnPrintSummary_Click(object sender, EventArgs e)
         {
             if (summary == null)
             {
-                summary = new Summary(chckTables.Checked ? tableManager.Travelers : null, chckChairs.Checked ? chairManager.Travelers : null, sortInfo + (chckTables.Checked ? " Table " : "") + (chckChairs.Checked ? " Chair " : ""));
+                summary = new Summary(chckTables.Checked ? tableManager.Travelers : null, chckChairs.Checked ? chairManager.Travelers : null, chckTables.Checked ? travelerUnraveler.Travelers : null, sortInfo + (chckTables.Checked ? " Table " : "") + (chckChairs.Checked ? " Chair " : ""));
                 summary.Print(workbooks);
             } else
             {

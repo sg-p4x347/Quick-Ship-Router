@@ -7,14 +7,14 @@
     <framework targetVersion="4.5.2" profile="Full" supportedRuntime="4.0.30319" />
   </compatibleFrameworks>
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="Quick Ship Router.exe.manifest" size="3513">
+    <dependentAssembly dependencyType="install" codebase="Quick Ship Router.exe.manifest" size="5530">
       <assemblyIdentity name="Quick Ship Router.exe" version="1.0.0.3" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="msil" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>+ccNkrCXCY0M7BosY2sAaNxbwUv4tPioY6liuDSLa1Y=</dsig:DigestValue>
+        <dsig:DigestValue>VQJwgow0OYuuTg5zsse2OlSMTw6ry3HUKSn4YcEyHII=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
