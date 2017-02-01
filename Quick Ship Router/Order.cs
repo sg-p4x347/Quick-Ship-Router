@@ -9,12 +9,14 @@ namespace Quick_Ship_Router
 {
     class Order
     {
-        private DateTime orderDate = DateTime.Today;
+        private DateTime orderDate = new DateTime();
+        private DateTime shipDate = new DateTime();
         private string salesOrderNo = "";
         private string customerNo = "";
         private string itemCode  = "";
         private string productLine = "";
         private int quantityOrdered = 0;
+        private int quantityOnHand = 0;
         private string shipVia = "";
         public Order()
         {
@@ -67,9 +69,21 @@ namespace Quick_Ship_Router
                             {
                                 quantityOrdered = Convert.ToInt32(value);
                             }
+                            else if (memberName == "quantityOnHand")
+                            {
+                                quantityOnHand = Convert.ToInt32(value);
+                            }
                             else if (memberName == "shipVia")
                             {
                                 shipVia = value;
+                            }
+                            else if (memberName == "orderDate")
+                            {
+                                orderDate = Convert.ToDateTime(value);
+                            }
+                            else if (memberName == "shipDate")
+                            {
+                                shipDate = Convert.ToDateTime(value);
                             }
                             continue;
                     }
@@ -93,7 +107,10 @@ namespace Quick_Ship_Router
             doc += "\"itemCode\":" + '"' + itemCode + '"' + ",";
             doc += "\"productLine\":" + '"' + productLine + '"' + ",";
             doc += "\"quantityOrdered\":" + '"' + quantityOrdered + '"' + ",";
-            doc += "\"shipVia\":" + '"' + shipVia + '"';
+            doc += "\"quantityOnHand\":" + '"' + quantityOnHand + '"' + ",";
+            doc += "\"shipVia\":" + '"' + shipVia + '"' + ",";
+            doc += "\"orderDate\":" + '"' + orderDate + '"' + ",";
+            doc += "\"shipDate\":" + '"' + shipDate + '"';
             doc += "}";
             return doc;
         }
@@ -185,6 +202,32 @@ namespace Quick_Ship_Router
             set
             {
                 productLine = value;
+            }
+        }
+
+        public int QuantityOnHand
+        {
+            get
+            {
+                return quantityOnHand;
+            }
+
+            set
+            {
+                quantityOnHand = value;
+            }
+        }
+
+        public DateTime ShipDate
+        {
+            get
+            {
+                return shipDate;
+            }
+
+            set
+            {
+                shipDate = value;
             }
         }
     }

@@ -17,16 +17,18 @@ using Spire.Pdf.Graphics;
 using Order = Quick_Ship_Router.Order;
 using Bill = Quick_Ship_Router.Bill;
 using Item = Quick_Ship_Router.Item;
+using QSTraveler = Quick_Ship_Router.Traveler;
 
 namespace Traveler_Unraveler
 {
     class TravelerUnraveler
     {
         // Interface
-        public TravelerUnraveler(OdbcConnection mas,string project)
+        public TravelerUnraveler(OdbcConnection mas,string project, ListView listView)
         {
             MAS = mas;
             m_projectName = project;
+            m_listView = listView;
         }
         // Properties
         private System.Data.Odbc.OdbcConnection MAS;  // the ODBC driver connection to the MAS database
@@ -34,7 +36,7 @@ namespace Traveler_Unraveler
         private List<Order> m_orders =  new List<Order>();
         private List<Bill> m_models = new List<Bill>();
         private List<Traveler> travelers = new List<Traveler>();
-
+        private ListView m_listView = new ListView();
         internal List<Traveler> Travelers
         {
             get
@@ -49,15 +51,64 @@ namespace Traveler_Unraveler
         }
 
         // Create and print all Travelers
-        public void Print()
+        public void DisplayTravelers()
         {
+            // display the results to the chairListView
+            m_listView.Clear();
+            // Set to details view.
+            m_listView.View = View.Details;
+
+            // production info
+            m_listView.Columns.Add("Part No.", 150, HorizontalAlignment.Left);
+            m_listView.Columns.Add("ID", 100, HorizontalAlignment.Left);
+            m_listView.Columns.Add("Ordered", 100, HorizontalAlignment.Left);
+            m_listView.Columns.Add("Need to Produce", 100, HorizontalAlignment.Left);
+            // order info
+            m_listView.Columns.Add("Order No.(s)", 200, HorizontalAlignment.Left);
+            m_listView.Columns.Add("Customer(s)", 200, HorizontalAlignment.Left);
+            m_listView.Columns.Add("Ship date(s)", 200, HorizontalAlignment.Left);
+
+
+            foreach (Traveler traveler in travelers)
+            {
+                string dateList = "";
+                string customerList = "";
+                string orderList = "";
+                int totalOrdered = 0;
+                int i = 0;
+               
+                    totalOrdered += traveler.Order.QuantityOrdered;
+                    dateList += (i == 0 ? "" : ", ") + traveler.Order.OrderDate.ToString("MM/dd/yyyy");
+                    customerList += (i == 0 ? "" : ", ") + traveler.Order.CustomerNo;
+                    orderList += (i == 0 ? "" : ", ") + traveler.Order.SalesOrderNo;
+                    i++;
+                string[] row = {
+                    traveler.GetPart().BillNo,
+                    traveler.ID.ToString("D6"),
+                    totalOrdered.ToString(),
+                    traveler.GetPart().TotalQuantity.ToString(),
+                    orderList,
+                    customerList,
+                    dateList
+                };
+                ListViewItem tableListViewItem = new ListViewItem(row);
+                tableListViewItem.Checked = true;
+                m_listView.Items.Add(tableListViewItem);
+            }
+            m_listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
+            m_listView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+        public void Print() {
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            // open printed log file
+            System.IO.StreamWriter file = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
             // Open excel
             var excelApp = new Excel.Application();
             excelApp.DisplayAlerts = false;
             // Open the traveler template
             var workbooks = excelApp.Workbooks;
             //@"\\Mgfs01\share\common\Traveler Unraveler\Production traveler.xlsx"
-            var workbook = workbooks.Open(@"\\Mgfs01\share\common\Traveler Unraveler\Production traveler.xlsx",
+            var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "Production traveler.xlsx"),
                 0, false, 5, "", "", false, 2, "",
                 true, false, 0, true, false, false);
             var worksheets = workbook.Worksheets;
@@ -75,13 +126,13 @@ namespace Traveler_Unraveler
                 Excel.Range excelCell = (Excel.Range)outputSheet.get_Range("A2", "A2");
                 excelCell.Value2 = traveler.GetPart().BillNo + "        " + traveler.GetPart().BillDesc;
                 // Group
-                excelCell = (Excel.Range)outputSheet.get_Range("I1", "I1");
-                excelCell.Value2 = traveler.GetProject() + "-" + traveler.ID;
+                excelCell = (Excel.Range)outputSheet.get_Range("C1", "C1");
+                excelCell.Value2 = traveler.GetProject() + "-" + traveler.ID.ToString("D6");
                 // Date
                 excelCell = (Excel.Range)outputSheet.get_Range("D2", "D2");
                 excelCell.Value2 = traveler.GetDate().ToString("MM-dd-yyyy");
                 // Project
-                excelCell = (Excel.Range)outputSheet.get_Range("C1", "C1");
+                excelCell = (Excel.Range)outputSheet.get_Range("K11", "K11");
                 excelCell.Value2 = traveler.Order.SalesOrderNo;
 
                 // Models
@@ -96,7 +147,7 @@ namespace Traveler_Unraveler
                     excelCell.Value2 = model.QuantityPerBill;
                     // Group
                     excelCell = (Excel.Range)outputSheet.get_Range("M" + row.ToString(), "M" + row.ToString());
-                    excelCell.Value2 = traveler.GetProject() + "-" + model.Group;
+                    excelCell.Value2 = traveler.GetProject();
                     row++;
                 }
                 // Total quantity
@@ -177,15 +228,24 @@ namespace Traveler_Unraveler
                 }
 
                 SendToPrinter(@"\\Mgfs01\share\common\Drawings\Marco\PDF\" + drawingNo + ".pdf");
+
+                // successfully printed, so we should log in the printed.json file
+                if (!traveler.Printed)
+                {
+                    file.Write(traveler.Export());
+                    file.Flush();
+                }
+                traveler.Printed = true;
                 //###################################
 
                 // clean up resources
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(excelCell);
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+                
                 currentSheet++;
                 index++;
             }
-
+            file.Close();
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(templateSheet);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(worksheets);
             workbook.Close();
@@ -208,17 +268,17 @@ namespace Traveler_Unraveler
                 dialogPrint.PrinterSettings.FromPage = 1;
                 dialogPrint.PrinterSettings.ToPage = doc.Pages.Count;
 
-                //if (dialogPrint.ShowDialog() == DialogResult.OK)
-                //{
+                if (dialogPrint.ShowDialog() == DialogResult.OK)
+                {
 
-                //Set the pagenumber which you choose as the start page to print
-                doc.PrintFromPage = dialogPrint.PrinterSettings.FromPage;
-                //Set the pagenumber which you choose as the final page to print
-                doc.PrintToPage = dialogPrint.PrinterSettings.ToPage;
-                //Set the name of the printer which is to print the PDF
-                doc.PrinterName = dialogPrint.PrinterSettings.PrinterName;
+                    //Set the pagenumber which you choose as the start page to print
+                    doc.PrintFromPage = dialogPrint.PrinterSettings.FromPage;
+                    //Set the pagenumber which you choose as the final page to print
+                    doc.PrintToPage = dialogPrint.PrinterSettings.ToPage;
+                    //Set the name of the printer which is to print the PDF
+                    doc.PrinterName = dialogPrint.PrinterSettings.PrinterName;
 
-                //}
+                }
 
                 //set the page size to be output automatically from the size of the PDF file:
                 //doc.PageScaling = PdfPrintPageScaling.ActualSize;
@@ -249,9 +309,31 @@ namespace Traveler_Unraveler
         {
             travelers.Clear();
             ImportFromMAS();
-            
-            foreach (Order order in m_orders)
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+            string line;
+            List<Order> printedOrders = new List<Order>();
+            while ((line = file.ReadLine()) != null && line != "")
             {
+                QSTraveler printedTraveler = new QSTraveler(line);
+                foreach (Order printedOrder in printedTraveler.Orders)
+                {
+                    foreach (Order currOrder in m_orders)
+                    {
+                        if (currOrder.SalesOrderNo == printedOrder.SalesOrderNo)
+                        {
+                            printedOrders.Add(currOrder);
+                        }
+                    }
+                }
+            }
+            // remove the printed orders from current orders
+            foreach (Order printedOrder in printedOrders)
+            {
+                m_orders.Remove(printedOrder);
+            }
+            file.Close();
+            foreach (Order order in m_orders) {
                 Bill model = new Bill(order.ItemCode, order.QuantityOrdered,MAS);
                 // Make a unique traveler for each part, while combining common parts from different models into single travelers
                 //foreach (Bill billItem in model.ComponentBills)
@@ -295,7 +377,6 @@ namespace Traveler_Unraveler
                         travelers.Add(newTraveler);
                     }
                 }
-            //}
         }
         private void TallyBills(Bill bill, List<Bill> bills)
         {

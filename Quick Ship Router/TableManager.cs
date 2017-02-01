@@ -296,7 +296,7 @@ namespace Quick_Ship_Router
                         }
                         else
                         {
-                            if (blankRange.Item[5].Value2 != "-99999")
+                            if (Convert.ToString(blankRange.Item[5].Value2) != "-99999")
                             {
                                 traveler.BlankSize = "(" + blankRange.Item[5].Value2 + ") ~sheet";
                             }
@@ -424,10 +424,20 @@ namespace Quick_Ship_Router
                     string customerList = "";
                     string orderList = "";
                     int i = 0;
+
+                    int inventoryQty = 0;
                     foreach (Order order in traveler.Orders)
                     {
-                        customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                        orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+                        inventoryQty += order.QuantityOrdered;
+                    }
+                    inventoryQty -= traveler.Quantity;
+                    foreach (Order order in traveler.Orders)
+                    {
+                        if (order.QuantityOrdered > order.QuantityOnHand)
+                        {
+                            customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
+                            orderList += (i == 0 ? "" : ", ") + "(" + (order.QuantityOrdered - order.QuantityOnHand) + ") " + order.SalesOrderNo;
+                        }
                         i++;
                     }
                     //#####################
@@ -604,8 +614,15 @@ namespace Quick_Ship_Router
                 string result = "";
                 using (var client = new WebClient())
                 {
+                    client.Credentials = new NetworkCredential("gage", "Stargatep4x347");
                     client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                    result = client.UploadString(@"http://192.168.2.6:8080/printLabel", "POST", @"{""field"":""Value""");
+                    string json = "{\"ID\":\"" + table.ID + "\",";
+                    json += "\"Desc1\":\"" + table.Part.BillDesc + "\",";
+                    json += "\"Desc2\":\"" + table.Eband + "\",";
+                    json += "\"Pack\":\"" + (table.SupPackQty > 0 ? "SP" : "RP") + "\",";
+                    json += "\"Date\":\"" + DateTime.Today.ToString(@"yyyy\-MM\-dd") + "\"}";
+                    result = client.UploadString(@"http://crashridge.net:8080", "POST", json);
+                    //http://192.168.2.6:8080/printLabel
                 }
             }
         }

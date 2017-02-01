@@ -147,6 +147,21 @@ namespace Traveler_Unraveler
                 }
             }
         }
+        public string Export()
+        {
+            string doc = "";
+            doc += "{";
+            doc += "\"ID\":" + '"' + m_ID.ToString("D6") + '"' + ",";
+            doc += "\"itemCode\":" + '"' + m_part.BillNo + '"' + ",";
+            doc += "\"quantity\":" + '"' + m_part.TotalQuantity + '"' + ",";
+            doc += "\"type\":" + '"' + this.GetType().Name + '"' + ",";
+            doc += "\"orders\":[";
+                doc += m_order.Export();
+                doc += ",";
+            doc += "]";
+            doc += "},\n";
+            return doc;
+        }
         // Properties
         private string m_project;
         private int m_ID;
@@ -154,6 +169,7 @@ namespace Traveler_Unraveler
         private DateTime m_date = DateTime.Now;
         private List<Bill> m_models = new List<Bill>();
         private Bill m_part;
+        private bool m_printed = false;
 
         private Item m_material = null;
         private Bill m_edgebander = null;
@@ -225,6 +241,19 @@ namespace Traveler_Unraveler
             set
             {
                 m_ID = value;
+            }
+        }
+
+        public bool Printed
+        {
+            get
+            {
+                return m_printed;
+            }
+
+            set
+            {
+                m_printed = value;
             }
         }
     }

@@ -74,7 +74,7 @@ namespace Quick_Ship_Router
             MAS = new OdbcConnection();
             // initialize the MAS connection
             MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;";
-            MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347;";
+            //MAS.ConnectionString = "DSN=SOTAMAS90;Company=MGI;UID=GKC;PWD=sgp4x347;";
             try
             {
                 MAS.Open();
@@ -105,7 +105,7 @@ namespace Quick_Ship_Router
 
             tableManager = new TableManager(MAS, infoLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
             chairManager = new ChairManager(MAS, infoLabel, progressBar, chairListView);
-            travelerUnraveler = new TravelerUnraveler(MAS, "Standup Desks");
+            travelerUnraveler = new TravelerUnraveler(MAS, "Standup Desks",miscListView);
         }
         // Fill the customer list with customers
         private void PopulateCustomers()
@@ -180,7 +180,7 @@ namespace Quick_Ship_Router
             // get informatino from header
             OdbcCommand command = MAS.CreateCommand();
             string conditions = (mode == Mode.CreateSpecific ? "SalesOrderNo = '" + specificOrder.Text + "'" : (customerNames.Length != 0 && mode != Mode.CreateAll ? ("CustomerNo " + (mode == Mode.CreateUnselected ? "NOT" : "") + " IN (" + customerNames + ")") : "") + (showToday.Checked ? "AND OrderDate >= {d '" + today + "'}" : ""));
-            command.CommandText = "SELECT SalesOrderNo, CustomerNo, ShipVia, ShipExpireDate FROM SO_SalesOrderHeader" + (conditions.Length > 0 ? " WHERE " + conditions : "");
+            command.CommandText = "SELECT SalesOrderNo, CustomerNo, ShipVia, ShipExpireDate, OrderDate FROM SO_SalesOrderHeader" + (conditions.Length > 0 ? " WHERE " + conditions : "");
             OdbcDataReader reader = command.ExecuteReader();
             // read info
             while (reader.Read())
@@ -216,7 +216,11 @@ namespace Quick_Ship_Router
                             }
                             if (!reader.IsDBNull(3))
                             {
-                                order.OrderDate = reader.GetDate(3);
+                                order.ShipDate = reader.GetDate(3);
+                            }
+                            if (!reader.IsDBNull(4))
+                            {
+                                order.OrderDate = reader.GetDate(4);
                             }
 
                             order.ItemCode = billCode;
@@ -243,7 +247,10 @@ namespace Quick_Ship_Router
                             {
                                 order.OrderDate = reader.GetDate(3);
                             }
-
+                            if (!reader.IsDBNull(4))
+                            {
+                                order.OrderDate = reader.GetDate(4);
+                            }
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             chairManager.Orders.Add(order);
@@ -268,10 +275,13 @@ namespace Quick_Ship_Router
                             {
                                 order.OrderDate = reader.GetDate(3);
                             }
+                            if (!reader.IsDBNull(4))
+                            {
+                                order.OrderDate = reader.GetDate(4);
+                            }
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             travelerUnraveler.AddOrder(order);
-                            return true;
                         }
 
                     }
@@ -306,7 +316,7 @@ namespace Quick_Ship_Router
         }
         private bool IsBackPanel(string s)
         {
-            if (s.Substring(0,2) == "32")
+            if (s.Length >= 5 && s.Substring(0,5) == "32023")
             {
                 return true;
             } else
@@ -427,6 +437,7 @@ namespace Quick_Ship_Router
             specificOrder.Text = "";
             tableManager.DisplayTravelers();
             chairManager.DisplayTravelers();
+            travelerUnraveler.DisplayTravelers();
             infoLabel.Text = "Complete";
             progressBar.Value = 0;
             btnCreateTravelers.Enabled = true;
@@ -488,6 +499,11 @@ namespace Quick_Ship_Router
         {
             if (clearBefore.Checked) Clear();
             backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateAll, ""));
+        }
+
+        private void chckTables_CheckedChanged(object sender, EventArgs e)
+        {
+            summary = null;
         }
     }
 }

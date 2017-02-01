@@ -53,6 +53,8 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.infoLabel = new System.Windows.Forms.Label();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.chckChairs = new System.Windows.Forms.RadioButton();
+            this.chckTables = new System.Windows.Forms.RadioButton();
             this.btnPrintLabels = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
@@ -60,8 +62,8 @@
             this.btnCreateAll = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.chckTables = new System.Windows.Forms.RadioButton();
-            this.chckChairs = new System.Windows.Forms.RadioButton();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.miscListView = new System.Windows.Forms.ListView();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -69,6 +71,7 @@
             this.groupBox3.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.groupBox5.SuspendLayout();
+            this.tabPage3.SuspendLayout();
             this.SuspendLayout();
             // 
             // showToday
@@ -298,6 +301,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabControl1.Location = new System.Drawing.Point(12, 106);
             this.tabControl1.Name = "tabControl1";
@@ -398,6 +402,29 @@
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Print";
             // 
+            // chckChairs
+            // 
+            this.chckChairs.AutoSize = true;
+            this.chckChairs.Location = new System.Drawing.Point(330, 41);
+            this.chckChairs.Name = "chckChairs";
+            this.chckChairs.Size = new System.Drawing.Size(64, 20);
+            this.chckChairs.TabIndex = 27;
+            this.chckChairs.Text = "Chairs";
+            this.chckChairs.UseVisualStyleBackColor = true;
+            // 
+            // chckTables
+            // 
+            this.chckTables.AutoSize = true;
+            this.chckTables.Checked = true;
+            this.chckTables.Location = new System.Drawing.Point(330, 19);
+            this.chckTables.Name = "chckTables";
+            this.chckTables.Size = new System.Drawing.Size(69, 20);
+            this.chckTables.TabIndex = 26;
+            this.chckTables.TabStop = true;
+            this.chckTables.Text = "Tables";
+            this.chckTables.UseVisualStyleBackColor = true;
+            this.chckTables.CheckedChanged += new System.EventHandler(this.chckTables_CheckedChanged);
+            // 
             // btnPrintLabels
             // 
             this.btnPrintLabels.BackColor = System.Drawing.Color.MediumSeaGreen;
@@ -491,27 +518,31 @@
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
             // 
-            // chckTables
+            // tabPage3
             // 
-            this.chckTables.AutoSize = true;
-            this.chckTables.Checked = true;
-            this.chckTables.Location = new System.Drawing.Point(330, 19);
-            this.chckTables.Name = "chckTables";
-            this.chckTables.Size = new System.Drawing.Size(69, 20);
-            this.chckTables.TabIndex = 26;
-            this.chckTables.TabStop = true;
-            this.chckTables.Text = "Tables";
-            this.chckTables.UseVisualStyleBackColor = true;
+            this.tabPage3.Controls.Add(this.miscListView);
+            this.tabPage3.Location = new System.Drawing.Point(4, 29);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(1246, 610);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "Misc";
+            this.tabPage3.UseVisualStyleBackColor = true;
             // 
-            // chckChairs
+            // miscListView
             // 
-            this.chckChairs.AutoSize = true;
-            this.chckChairs.Location = new System.Drawing.Point(330, 41);
-            this.chckChairs.Name = "chckChairs";
-            this.chckChairs.Size = new System.Drawing.Size(64, 20);
-            this.chckChairs.TabIndex = 27;
-            this.chckChairs.Text = "Chairs";
-            this.chckChairs.UseVisualStyleBackColor = true;
+            this.miscListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.miscListView.BackColor = System.Drawing.Color.Beige;
+            this.miscListView.CheckBoxes = true;
+            this.miscListView.ForeColor = System.Drawing.Color.Black;
+            this.miscListView.FullRowSelect = true;
+            this.miscListView.GridLines = true;
+            this.miscListView.Location = new System.Drawing.Point(6, 6);
+            this.miscListView.Name = "miscListView";
+            this.miscListView.Size = new System.Drawing.Size(1237, 598);
+            this.miscListView.TabIndex = 1;
+            this.miscListView.UseCompatibleStateImageBehavior = false;
             // 
             // Form1
             // 
@@ -540,6 +571,7 @@
             this.groupBox4.ResumeLayout(false);
             this.groupBox4.PerformLayout();
             this.groupBox5.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -580,6 +612,8 @@
         private System.Windows.Forms.CheckBox clearBefore;
         private System.Windows.Forms.RadioButton chckChairs;
         private System.Windows.Forms.RadioButton chckTables;
+        private System.Windows.Forms.TabPage tabPage3;
+        private System.Windows.Forms.ListView miscListView;
     }
 }
 

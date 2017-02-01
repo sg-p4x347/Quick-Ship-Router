@@ -32,7 +32,7 @@ namespace Quick_Ship_Router
                 quantityOrdered = qty;
                 itemDescription = itemDesc;
                 orderNums = new List<string>();
-                orderDates = new List<string>();
+                shipDates = new List<string>();
                 customers = new List<string>();
             }
             public string StringifyOrders ()
@@ -40,6 +40,7 @@ namespace Quick_Ship_Router
                 string list = "";
                 foreach (string num in orderNums)
                 {
+                    // the order number
                     list += (list.Length > 0 ? ", " : "") + num;
                 }
                 return list;
@@ -47,7 +48,7 @@ namespace Quick_Ship_Router
             public string StringifyDates()
             {
                 string list = "";
-                foreach (string date in orderDates)
+                foreach (string date in shipDates)
                 {
                     list += (list.Length > 0 ? ", " : "") + date;
                 }
@@ -62,12 +63,23 @@ namespace Quick_Ship_Router
                 }
                 return list;
             }
+            public void AddOrder(Order order)
+            {
+                string orderNo = "";
+                orderNo += '(';
+                orderNo += "P:" + (order.QuantityOrdered - order.QuantityOnHand) + ",";
+                orderNo += "I:" + (order.QuantityOnHand) + ") ";
+                orderNo += order.SalesOrderNo;
+                orderNums.Add(orderNo);
+                shipDates.Add(order.ShipDate.ToString("MM/dd/yyyy"));
+                customers.Add(order.CustomerNo);
+            }
             public string travelerID;
             public string itemCode;
             public int quantityOrdered;
             public string itemDescription;
             public List<string> orderNums;
-            public List<string> orderDates;
+            public List<string> shipDates;
             public List<string> customers;
         }
         public Summary(List<Table> tables, List<Chair> chairs, List<tuTraveler> misc, string sort)
@@ -160,18 +172,14 @@ namespace Quick_Ship_Router
             SummaryItem item = new SummaryItem(traveler.ID.ToString("D6"), traveler.Part.BillNo, traveler.Quantity, traveler.Part.BillDesc);
             foreach (Order order in traveler.Orders)
             {
-                item.orderNums.Add(order.SalesOrderNo);
-                item.orderDates.Add(order.OrderDate.ToString("MM/dd/yyyy"));
-                item.customers.Add(order.CustomerNo);
+                item.AddOrder(order);
             }
             items.Add(item);
         }
         private void CreateSummaryItem(tuTraveler traveler)
         {
-            SummaryItem item = new SummaryItem(traveler.GetProject(), traveler.GetPart().BillNo, Convert.ToInt32(traveler.GetPart().QuantityPerBill), traveler.GetPart().BillDesc);
-            item.orderNums.Add(traveler.Order.SalesOrderNo);
-            item.orderDates.Add(traveler.Order.OrderDate.ToString("MM/dd/yyyy"));
-            item.customers.Add(traveler.Order.CustomerNo);
+            SummaryItem item = new SummaryItem(traveler.GetProject() + "-" + traveler.ID.ToString("D6"), traveler.GetPart().BillNo, Convert.ToInt32(traveler.GetPart().QuantityPerBill), traveler.GetPart().BillDesc);
+            item.AddOrder(traveler.Order);
             items.Add(item);
         }
         public void Print(Excel.Workbooks workbooks)

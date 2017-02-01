@@ -292,7 +292,8 @@ namespace Quick_Ship_Router
                 OdbcDataReader reader = command.ExecuteReader();
                 if (reader.Read())
                 {
-                    int available = Convert.ToInt32(reader.GetValue(1)) - Convert.ToInt32(reader.GetValue(0));
+                    int onHand = Convert.ToInt32(reader.GetValue(1));
+                    int available = onHand - m_quantity;//Convert.ToInt32(reader.GetValue(0));
                     if (available >= 0)
                     {
                         // No parts need to be produced
@@ -303,8 +304,17 @@ namespace Quick_Ship_Router
                         // adjust the quantity that needs to be produced
                         m_quantity = Math.Min(-available, m_quantity);
                     }
+                    // adjust the quantity on hand for orders
+                    m_orders.Sort((a, b) => b.OrderDate.CompareTo(a.OrderDate)); // sort in descending order (oldest first)
+                    for (int i = 0; i < m_orders.Count && onHand > 0; i++)
+                    {
+                        int quantityOnHand = Math.Min(onHand, m_orders[i].QuantityOrdered);
+                        m_orders[i].QuantityOnHand = quantityOnHand;
+                        onHand -= quantityOnHand;
+                    }
                 }
                 reader.Close();
+
             }
             catch (Exception ex)
             {
