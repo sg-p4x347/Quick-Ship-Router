@@ -18,6 +18,7 @@ namespace Quick_Ship_Router
         private int quantityOrdered = 0;
         private int quantityOnHand = 0;
         private string shipVia = "";
+        private string comment = "";
         public Order()
         {
 
@@ -228,6 +229,19 @@ namespace Quick_Ship_Router
             set
             {
                 shipDate = value;
+            }
+        }
+
+        public string Comment
+        {
+            get
+            {
+                return comment;
+            }
+
+            set
+            {
+                comment = value;
             }
         }
     }

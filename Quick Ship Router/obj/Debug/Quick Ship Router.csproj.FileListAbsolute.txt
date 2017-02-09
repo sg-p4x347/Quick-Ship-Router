@@ -16,3 +16,4 @@ C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Spire.Li
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Microsoft.mshtml.dll
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Spire.Pdf.xml
 C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\bin\Debug\Spire.License.xml
+C:\Gage Omega\Programming\Quick Ship Router\Quick Ship Router\obj\Debug\Quick Ship Router.csprojResolveAssemblyReference.cache

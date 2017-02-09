@@ -175,7 +175,7 @@ namespace Quick_Ship_Router
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
                 // Table specific
-                GetColorInfo(traveler);
+                //GetColorInfo(traveler);
                 GetBoxInfo(traveler);
                 GetBlankInfo(traveler);
                 index++;
@@ -185,9 +185,10 @@ namespace Quick_Ship_Router
         private void GetColorInfo(Table traveler)
         {
             // Get the color from the color reference
-            for (int row = 2; row < 27; row++)
+            for (int row = 2; true; row++)
             {
                 var colorRefRange = m_colorRef.get_Range("A" + row, "B" + row);
+                if (Convert.ToString(colorRefRange.Value2) == "") break;
                 if (Convert.ToInt32(colorRefRange.Item[1].Value2) == traveler.ColorNo)
                 {
                     traveler.Color = colorRefRange.Item[2].Value2;
@@ -230,12 +231,14 @@ namespace Quick_Ship_Router
         // Calculate how many will be left over + Blank Size
         private void GetBlankInfo(Table traveler) {
             // find the Blank code in the color table
-            for (int crow = 2; crow < 27; crow++)
+            for (int crow = 2; true; crow++)
             {
                 var colorRange = m_crossRef.get_Range("K" + crow, "M" + crow);
+                if (Convert.ToString(colorRange.Value2) == "") break;
                 // find the correct color
                 if (Convert.ToInt32(colorRange.Item[1].Value2) == traveler.ColorNo)
                 {
+                    traveler.Color = colorRange.Item[2].Value2;
                     traveler.BlankColor = colorRange.Item[3].Value2;
                     if (colorRange != null) Marshal.ReleaseComObject(colorRange);
                     break;
@@ -254,7 +257,6 @@ namespace Quick_Ship_Router
                         // check to see if there is a MAGR blank
                         if (traveler.BlankColor == "MAGR" && range.Item[4].Value2 != null)
                         {
-
                             traveler.BlankNo = range.Item[4].Value2;
                         }
                         // check to see if there is a CHOK blank
@@ -282,28 +284,22 @@ namespace Quick_Ship_Router
                     if ((traveler.ShapeNo == "MG2247" || traveler.ShapeNo == "38-2247") && exceptionColors.IndexOf(traveler.ColorNo) != -1)
                     {
                         // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
-                        traveler.BlankSize = "(5X10) ~sheet";
+                        traveler.BlankSize = "(5X10)";
                         traveler.BlankNo = "";
                         traveler.PartsPerBlank = 2;
                     }
                     else
                     {
-                        // All normal
+                        // Blank
                         if (Convert.ToInt32(blankRange.Item[7].Value2) > 0)
                         {
-                            traveler.BlankSize = "(" + blankRange.Item[8].Value2 + ")";
+                            traveler.BlankSize += "(" + blankRange.Item[8].Value2 + ")";
                             traveler.PartsPerBlank = Convert.ToInt32(blankRange.Item[7].Value2);
                         }
-                        else
+                        // sheet
+                        if (blankRange.Item[5].Value2 != null)
                         {
-                            if (Convert.ToString(blankRange.Item[5].Value2) != "-99999")
-                            {
-                                traveler.BlankSize = "(" + blankRange.Item[5].Value2 + ") ~sheet";
-                            }
-                            else
-                            {
-                                traveler.BlankSize = "No Blank";
-                            }
+                            traveler.BlankSize += "(" + blankRange.Item[5].Value2 + ")";
                         }
                     }
                     // calculate production numbers
@@ -378,7 +374,7 @@ namespace Quick_Ship_Router
                 foreach (Order order in traveler.Orders)
                 {
                     totalOrdered += order.QuantityOrdered;
-                    dateList += (i == 0 ? "" : ", ") + order.OrderDate.ToString("MM/dd/yyyy");
+                    dateList += (i == 0 ? "" : ", ") + order.ShipDate.ToString("MM/dd/yyyy");
                     customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
                     orderList += (i == 0 ? "" : ", ") + order.SalesOrderNo;
                     i++;
@@ -433,11 +429,12 @@ namespace Quick_Ship_Router
                     inventoryQty -= traveler.Quantity;
                     foreach (Order order in traveler.Orders)
                     {
-                        if (order.QuantityOrdered > order.QuantityOnHand)
-                        {
+                        // Uncomment this code if orders that are covered by inventory are not desired
+                        //if (order.QuantityOrdered > order.QuantityOnHand)
+                        //{
                             customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                            orderList += (i == 0 ? "" : ", ") + "(" + (order.QuantityOrdered - order.QuantityOnHand) + ") " + order.SalesOrderNo;
-                        }
+                            orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+                        //}
                         i++;
                     }
                     //#####################
@@ -532,7 +529,15 @@ namespace Quick_Ship_Router
                     }
                     range.Value2 = hardware;
                     row++;
-
+                    // COMMENT
+                    if (traveler.Orders.Exists(x => x.Comment != ""))
+                    {
+                        range = outputSheet.get_Range("A" + row, "C" + row);
+                        range.Item[1].Value2 = "Comment:";
+                        range.Item[2].Value2 = traveler.Orders.Find(x => x.Comment != "").Comment;
+                        row++;
+                    }
+                    
                     //#####################
                     // Box Construction
                     //#####################

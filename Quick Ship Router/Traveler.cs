@@ -136,6 +136,7 @@ namespace Quick_Ship_Router
             if (m_partNo != "")
             {
                 m_part = new Bill(m_partNo, m_quantity, MAS);
+                m_part.BillDesc = m_part.BillDesc.Replace("TableTopAsm,", ""); // tabletopasm is pretty obvious and therefore extraneous
                 m_drawingNo = m_part.DrawingNo;
             }
         }

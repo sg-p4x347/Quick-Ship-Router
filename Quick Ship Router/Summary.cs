@@ -111,9 +111,9 @@ namespace Quick_Ship_Router
                         blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : (table.BlankColor + " " + table.BlankSize), table.BlankQuantity));
                     }
                     // total work
-                    totalCNC += table.Cnc.QuantityPerBill;
-                    totalVector += table.Vector.QuantityPerBill;
-                    totalPack += table.Assm.QuantityPerBill;
+                    totalCNC += table.Cnc.TotalQuantity;
+                    totalVector += table.Vector.TotalQuantity;
+                    totalPack += table.Assm.TotalQuantity;
                 }
             }
             if (chairs != null)
@@ -237,13 +237,13 @@ namespace Quick_Ship_Router
                 }
                 // work totals
                 Excel.Range cnc = totals.get_Range("E4", "E4");
-                cnc.Value2 = totalCNC;
+                cnc.Value2 = totalCNC/60;
                 Marshal.ReleaseComObject(cnc);
                 Excel.Range vector = totals.get_Range("E5", "E5");
-                vector.Value2 = totalVector;
+                vector.Value2 = totalVector/60;
                 Marshal.ReleaseComObject(vector);
                 Excel.Range pack = totals.get_Range("E6", "E6");
-                pack.Value2 = totalPack;
+                pack.Value2 = totalPack/60;
                 Marshal.ReleaseComObject(pack);
                 try
                 {

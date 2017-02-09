@@ -188,7 +188,7 @@ namespace Quick_Ship_Router
                 foreach (Order order in traveler.Orders)
                 {
                     totalOrdered += order.QuantityOrdered;
-                    dateList += (i == 0 ? "" : ", ") + order.OrderDate.ToString("MM/dd/yyyy");
+                    dateList += (i == 0 ? "" : ", ") + order.ShipDate.ToString("MM/dd/yyyy");
                     customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
                     orderList += (i == 0 ? "" : ", ") + order.SalesOrderNo;
                     i++;
@@ -332,7 +332,7 @@ namespace Quick_Ship_Router
                     // Regular pack
                     range = outputSheet.get_Range("B" + row, "C" + row);
                     range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
-                    range.Item[2].Value2 = traveler.RegPackQty;
+                    range.Item[2].Value2 = "?"; // traveler.RegPackQty;
                     row++;
                     // Box rate
                     if (traveler.Box != null)

@@ -78,7 +78,7 @@ namespace Traveler_Unraveler
                 int i = 0;
                
                     totalOrdered += traveler.Order.QuantityOrdered;
-                    dateList += (i == 0 ? "" : ", ") + traveler.Order.OrderDate.ToString("MM/dd/yyyy");
+                    dateList += (i == 0 ? "" : ", ") + traveler.Order.ShipDate.ToString("MM/dd/yyyy");
                     customerList += (i == 0 ? "" : ", ") + traveler.Order.CustomerNo;
                     orderList += (i == 0 ? "" : ", ") + traveler.Order.SalesOrderNo;
                     i++;
@@ -277,26 +277,25 @@ namespace Traveler_Unraveler
                     doc.PrintToPage = dialogPrint.PrinterSettings.ToPage;
                     //Set the name of the printer which is to print the PDF
                     doc.PrinterName = dialogPrint.PrinterSettings.PrinterName;
+                    //set the page size to be output automatically from the size of the PDF file:
+                    //doc.PageScaling = PdfPrintPageScaling.ActualSize;
+                    PaperSize paper = new PaperSize("Ledger", 1100, 1700);
+                    paper.RawKind = (int)PaperKind.Tabloid;
+                    dialogPrint.PrinterSettings.DefaultPageSettings.PaperSize = paper;
+                    dialogPrint.PrinterSettings.Collate = false;
+                    //dialogPrint.PrinterSettings.PrinterName;
+                    //dialogPrint.PrinterSettings.PrinterName = "MX-5001N";
 
+                    //doc.PrintDocument.DefaultPageSettings.PaperSize = paper;
+                    PrintDocument printDoc = doc.PrintDocument;
+
+                    //printDoc.DefaultPageSettings.PaperSize = paper;
+                    printDoc.PrinterSettings = dialogPrint.PrinterSettings;
+                    dialogPrint.Document = printDoc;
+
+                    printDoc.Print();
                 }
-
-                //set the page size to be output automatically from the size of the PDF file:
-                //doc.PageScaling = PdfPrintPageScaling.ActualSize;
-                PaperSize paper = new PaperSize("Ledger", 1100, 1700);
-                paper.RawKind = (int)PaperKind.Tabloid;
-                dialogPrint.PrinterSettings.DefaultPageSettings.PaperSize = paper;
-                dialogPrint.PrinterSettings.Collate = false;
-                //dialogPrint.PrinterSettings.PrinterName;
-                //dialogPrint.PrinterSettings.PrinterName = "MX-5001N";
-
-                //doc.PrintDocument.DefaultPageSettings.PaperSize = paper;
-                PrintDocument printDoc = doc.PrintDocument;
-
-                //printDoc.DefaultPageSettings.PaperSize = paper;
-                printDoc.PrinterSettings = dialogPrint.PrinterSettings;
-                dialogPrint.Document = printDoc;
-
-                printDoc.Print();
+                
             }
             catch (Exception ex)
             {

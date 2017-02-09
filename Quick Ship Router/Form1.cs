@@ -187,14 +187,19 @@ namespace Quick_Ship_Router
             {
                 // get information from detail
                 OdbcCommand detailCommand = MAS.CreateCommand();
-                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
+                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure, ItemCodeDesc FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
 
                 while (detailReader.Read())
                 {
+                    string comment = "";
                     // Import bill & quantity 
                     string billCode = detailReader.GetString(0);
+                    if (billCode == "/C")
+                    {
+                        comment = detailReader.GetString(3);
+                    }
                     if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT")
                     {
                         if (IsTable(billCode))
@@ -222,7 +227,7 @@ namespace Quick_Ship_Router
                             {
                                 order.OrderDate = reader.GetDate(4);
                             }
-
+                            order.Comment = comment;
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             tableManager.Orders.Add(order);
@@ -245,12 +250,13 @@ namespace Quick_Ship_Router
                             }
                             if (!reader.IsDBNull(3))
                             {
-                                order.OrderDate = reader.GetDate(3);
+                                order.ShipDate = reader.GetDate(3);
                             }
                             if (!reader.IsDBNull(4))
                             {
                                 order.OrderDate = reader.GetDate(4);
                             }
+                            order.Comment = comment;
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             chairManager.Orders.Add(order);
@@ -273,12 +279,13 @@ namespace Quick_Ship_Router
                             }
                             if (!reader.IsDBNull(3))
                             {
-                                order.OrderDate = reader.GetDate(3);
+                                order.ShipDate = reader.GetDate(3);
                             }
                             if (!reader.IsDBNull(4))
                             {
                                 order.OrderDate = reader.GetDate(4);
                             }
+                            order.Comment = comment;
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             travelerUnraveler.AddOrder(order);
