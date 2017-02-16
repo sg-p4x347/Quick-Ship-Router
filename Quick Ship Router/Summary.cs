@@ -110,6 +110,20 @@ namespace Quick_Ship_Router
                     {
                         blanks.Add(new BlankItem(table.BlankNo != "" ? table.BlankNo : (table.BlankColor + " " + table.BlankSize), table.BlankQuantity));
                     }
+                    // tally pallets
+                    bool foundPallet = false;
+                    for (int i = 0; i < pallets.Count; i++)
+                    {
+                        if (pallets[i].size == table.PalletSize)
+                        {
+                            pallets[i].quantity += table.PalletQty;
+                            foundPallet = true;
+                        }
+                    }
+                    if (!foundPallet)
+                    {
+                        pallets.Add(new BlankItem(table.PalletSize, table.PalletQty));
+                    }
                     // total work
                     totalCNC += table.Cnc.TotalQuantity;
                     totalVector += table.Vector.TotalQuantity;
@@ -245,6 +259,18 @@ namespace Quick_Ship_Router
                 Excel.Range pack = totals.get_Range("E6", "E6");
                 pack.Value2 = totalPack/60;
                 Marshal.ReleaseComObject(pack);
+                // print pallet summary
+                row = 4;
+                foreach (BlankItem pallet in pallets)
+                {
+                    Excel.Range range = totals.get_Range("G" + row, "H" + row);
+                    range.Item[1].Value2 = pallet.size;
+                    range.Item[2].Value2 = pallet.quantity;
+                    // clean up range
+                    Marshal.ReleaseComObject(range);
+                    // increment row
+                    row++;
+                }
                 try
                 {
                     //##### Print Blank Total Sheet #######
@@ -286,6 +312,7 @@ namespace Quick_Ship_Router
         private int totalChairs = 0;
         private int totalTravelers = 0;
         private List<BlankItem> blanks = new List<BlankItem>();
+        private List<BlankItem> pallets = new List<BlankItem>();
         private double totalCNC = 0;
         private double totalVector = 0;
         private double totalPack = 0;

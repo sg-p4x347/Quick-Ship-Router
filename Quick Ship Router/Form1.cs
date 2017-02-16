@@ -103,7 +103,7 @@ namespace Quick_Ship_Router
             var blankRef = (Excel.Worksheet)worksheets.get_Item("Blank Parent");
             var boxRef = (Excel.Worksheet)worksheets.get_Item("Box Size");
 
-            tableManager = new TableManager(MAS, infoLabel, progressBar, tableListView,crossRef,boxRef,blankRef,colorRef);
+            tableManager = new TableManager(MAS, infoLabel, progressBar, tableListView);
             chairManager = new ChairManager(MAS, infoLabel, progressBar, chairListView);
             travelerUnraveler = new TravelerUnraveler(MAS, "Standup Desks",miscListView);
         }

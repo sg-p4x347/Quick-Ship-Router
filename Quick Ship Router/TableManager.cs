@@ -21,16 +21,12 @@ namespace Quick_Ship_Router
     class TableManager
     {
         public TableManager() { }
-        public TableManager(OdbcConnection mas, Label infoLabel,ProgressBar progressBar, ListView listview, Excel.Worksheet crossRef, Excel.Worksheet boxRef, Excel.Worksheet blankRef, Excel.Worksheet colorRef, bool checkPrinted = true)
+        public TableManager(OdbcConnection mas, Label infoLabel,ProgressBar progressBar, ListView listview, bool checkPrinted = true)
         {
             m_MAS = mas;
             m_infoLabel = infoLabel;
             m_progressBar = progressBar;
             m_tableListView = listview;
-            m_crossRef = crossRef;
-            m_boxRef = boxRef;
-            m_blankRef = blankRef;
-            m_colorRef = colorRef;
             m_checkPrinted = checkPrinted;
         }
         //=======================
@@ -175,172 +171,114 @@ namespace Quick_Ship_Router
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
                 // Table specific
-                //GetColorInfo(traveler);
-                GetBoxInfo(traveler);
-                GetBlankInfo(traveler);
+                GetColorInfo(traveler);
+                GetTableInfo(traveler);
                 index++;
             }
         }
         // get a reader friendly string for the color
         private void GetColorInfo(Table traveler)
         {
-            // Get the color from the color reference
-            for (int row = 2; true; row++)
+            // open the color ref csv file
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            System.IO.StreamReader colorRef = new StreamReader(System.IO.Path.Combine(exeDir, "Color Reference.csv"));
+            colorRef.ReadLine(); // read past the header
+            string line = colorRef.ReadLine();
+            while (line != "")
             {
-                var colorRefRange = m_colorRef.get_Range("A" + row, "B" + row);
-                if (Convert.ToString(colorRefRange.Value2) == "") break;
-                if (Convert.ToInt32(colorRefRange.Item[1].Value2) == traveler.ColorNo)
+                string[] row = line.Split(',');
+                if (Convert.ToInt32(row[0]) == traveler.ColorNo)
                 {
-                    traveler.Color = colorRefRange.Item[2].Value2;
+                    traveler.Color = row[1];
+                    traveler.BlankColor = row[2];
+                    break;
                 }
-                if (colorRefRange != null) Marshal.ReleaseComObject(colorRefRange);
+                line = colorRef.ReadLine();
             }
+            colorRef.Close();
         }
         // calculate how much of each box size
-        private void GetBoxInfo(Table traveler)
+        private void GetTableInfo(Table traveler)
         {
-            for (int row = 2; row < 78; row++)
+            // open the table ref csv file
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            System.IO.StreamReader tableRef = new StreamReader(System.IO.Path.Combine(exeDir, "Table Reference.csv"));
+            tableRef.ReadLine(); // read past the header
+            string line = tableRef.ReadLine();
+            while (line != "")
             {
-                var range = m_crossRef.get_Range("B" + row.ToString(), "F" + row.ToString());
-                // find the correct model number in the spreadsheet
-                if (range.Item[1].Value2 == traveler.ShapeNo)
+                string[] row = line.Split(',');
+                if (row[0] == traveler.ShapeNo)
                 {
+                    //--------------------------------------------
+                    // BLANK INFO
+                    //--------------------------------------------
+
+                    traveler.BlankSize = row[1];
+                    traveler.SheetSize = row[2];
+                    // [column 3 contains # of blanks per sheet]
+                    traveler.PartsPerBlank = row[4] != "" ? Convert.ToInt32(row[4]) : 0;
+
+                    // Exception cases -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+                    List<int> exceptionColors = new List<int> { 60, 50, 49 };
+                    if ((traveler.ShapeNo == "MG2247" || traveler.ShapeNo == "38-2247") && exceptionColors.IndexOf(traveler.ColorNo) != -1)
+                    {
+                        // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
+                        traveler.BlankComment = "Use " + traveler.SheetSize + " sheet and align grain";
+                        traveler.PartsPerBlank = 2;
+                    }
+                    //!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
+
+                    // check to see if there is a MAGR blank
+                    if (traveler.BlankColor == "MAGR" && row[5] != "")
+                    {
+                        traveler.BlankNo = row[5];
+                    }
+                    // check to see if there is a CHOK blank
+                    else if (traveler.BlankColor == "CHOK" && row[6] != "")
+                    {
+                        traveler.BlankNo = row[6];
+                    }
+                    // there are is no specific blank size in the kanban
+                    else
+                    {
+                        traveler.BlankNo = "";
+                    }
+                    // calculate production numbers
+                    if (traveler.PartsPerBlank <= 0) traveler.PartsPerBlank = 1;
+                    decimal tablesPerBlank = Convert.ToDecimal(traveler.PartsPerBlank);
+                    traveler.BlankQuantity = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(traveler.Quantity) / tablesPerBlank));
+                    int partsProduced = traveler.BlankQuantity * Convert.ToInt32(tablesPerBlank);
+                    traveler.LeftoverParts = partsProduced - traveler.Quantity;
+                    //--------------------------------------------
+                    // PACK & BOX INFO
+                    //--------------------------------------------
+                    traveler.SupPack = row[7];
+                    traveler.RegPack = row[8];
                     foreach (Order order in traveler.Orders)
                     {
                         // Get box information
                         if (order.ShipVia != "" && (order.ShipVia.ToUpper().IndexOf("FEDEX") != -1 || order.ShipVia.ToUpper().IndexOf("UPS") != -1))
                         {
-                            var boxRange = m_boxRef.get_Range("C" + (row + 1), "H" + (row + 1)); // Super Pack
-                            traveler.SupPack = (boxRange.Item[1].Value2 != null ? boxRange.Item[5].Value2 + " ( " + boxRange.Item[1].Value2 + " x " + boxRange.Item[2].Value2 + " x " + boxRange.Item[3].Value2 + " )" + (boxRange.Item[4].Value2 != null ? boxRange.Item[4].Value2 + " pads" : "") : "Missing information") + (boxRange.Item[6].Value2 != null ? " " + boxRange.Item[6].Value2 : "");
                             traveler.SupPackQty += order.QuantityOrdered;
-                            if (boxRange != null) Marshal.ReleaseComObject(boxRange);
                         }
                         else
                         {
-                            var boxRange = m_boxRef.get_Range("I" + (row + 1), "N" + (row + 1)); // Regular Pack
-                            traveler.RegPack = (boxRange.Item[1].Value2 != null ? boxRange.Item[5].Value2 + " ( " + boxRange.Item[1].Value2 + " x " + boxRange.Item[2].Value2 + " x " + boxRange.Item[3].Value2 + " )" : "Missing information") + (boxRange.Item[6].Value2 != null ? " " + boxRange.Item[6].Value2 : "");
                             traveler.RegPackQty += order.QuantityOrdered;
-                            if (boxRange != null) Marshal.ReleaseComObject(boxRange);
+                            // approximately 20 max tables per pallet
+                            traveler.PalletQty += Convert.ToInt32(Math.Ceiling(Convert.ToDouble(order.QuantityOrdered) / 20));
                         }
                     }
-                }
-                if (range != null) Marshal.ReleaseComObject(range);
-            }
+                    //--------------------------------------------
+                    // PALLET
+                    //--------------------------------------------
+                    traveler.PalletSize = row[10];
 
-        }
-        // Calculate how many will be left over + Blank Size
-        private void GetBlankInfo(Table traveler) {
-            // find the Blank code in the color table
-            for (int crow = 2; true; crow++)
-            {
-                var colorRange = m_crossRef.get_Range("K" + crow, "M" + crow);
-                if (Convert.ToString(colorRange.Value2) == "") break;
-                // find the correct color
-                if (Convert.ToInt32(colorRange.Item[1].Value2) == traveler.ColorNo)
-                {
-                    traveler.Color = colorRange.Item[2].Value2;
-                    traveler.BlankColor = colorRange.Item[3].Value2;
-                    if (colorRange != null) Marshal.ReleaseComObject(colorRange);
                     break;
                 }
-                if (colorRange != null) Marshal.ReleaseComObject(colorRange);
+                line = tableRef.ReadLine();
             }
-            for (int row = 2; row < 78; row++)
-            {
-                var range = (Excel.Range)m_crossRef.get_Range("B" + row.ToString(), "F" + row.ToString());
-                // find the correct model number in the spreadsheet
-                if (range.Item[1].Value2 == traveler.ShapeNo)
-                {
-                    if (range.Item[3].Value2 == "Yes")
-                    {
-                        
-                        // check to see if there is a MAGR blank
-                        if (traveler.BlankColor == "MAGR" && range.Item[4].Value2 != null)
-                        {
-                            traveler.BlankNo = range.Item[4].Value2;
-                        }
-                        // check to see if there is a CHOK blank
-                        else if (traveler.BlankColor == "CHOK" && range.Item[5].Value2 != null)
-                        {
-
-                            traveler.BlankNo = range.Item[5].Value2;
-                        }
-                        // there are no available blanks
-                        else
-                        {
-                            traveler.BlankNo = "";
-                        }
-                    }
-                    if (range != null) Marshal.ReleaseComObject(range);
-                }
-                if (range != null) Marshal.ReleaseComObject(range);
-
-                var blankRange = m_blankRef.get_Range("A" + row.ToString(), "H" + row.ToString());
-                // find the correct model number in the spreadsheet
-                if (blankRange.Item[1].Value2 == traveler.ShapeNo)
-                {
-                    // set the blank size
-                    List<int> exceptionColors = new List<int> { 60, 50, 49 };
-                    if ((traveler.ShapeNo == "MG2247" || traveler.ShapeNo == "38-2247") && exceptionColors.IndexOf(traveler.ColorNo) != -1)
-                    {
-                        // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
-                        traveler.BlankSize = "(5X10)";
-                        traveler.BlankNo = "";
-                        traveler.PartsPerBlank = 2;
-                    }
-                    else
-                    {
-                        // Blank
-                        if (Convert.ToInt32(blankRange.Item[7].Value2) > 0)
-                        {
-                            traveler.BlankSize += "(" + blankRange.Item[8].Value2 + ")";
-                            traveler.PartsPerBlank = Convert.ToInt32(blankRange.Item[7].Value2);
-                        }
-                        // sheet
-                        if (blankRange.Item[5].Value2 != null)
-                        {
-                            traveler.BlankSize += "(" + blankRange.Item[5].Value2 + ")";
-                        }
-                    }
-                    // calculate production numbers
-                    if (traveler.PartsPerBlank < 0) traveler.PartsPerBlank = 0;
-                    decimal tablesPerBlank = Convert.ToDecimal(blankRange.Item[7].Value2);
-                    if (tablesPerBlank <= 0) tablesPerBlank = 1;
-                    traveler.BlankQuantity = Convert.ToInt32(Math.Ceiling(Convert.ToDecimal(traveler.Quantity) / tablesPerBlank));
-                    int partsProduced = traveler.BlankQuantity * Convert.ToInt32(tablesPerBlank);
-                    traveler.LeftoverParts = partsProduced - traveler.Quantity;
-                }
-                if (blankRange != null) Marshal.ReleaseComObject(blankRange);
-
-
-                
-            }
-            // subtract the inventory parts from the box quantity
-            // router.RegPackQty = Math.Max(0, router.RegPackQty - ((router.RegPackQty + router.SupPackQty) - router.Quantity));
-
-
-            // FROM MAS
-            // get bill information from MAS
-            //{
-            //    OdbcCommand command = MAS.CreateCommand();
-            //    command.CommandText = "SELECT CurrentBillRevision, Revision, BlkSize, BlkName, TablesPerBlank FROM BM_billHeader WHERE billno = '" + traveler.PartNo + "'";
-            //    OdbcDataReader reader = command.ExecuteReader();
-            //    // read info
-            //    while (reader.Read())
-            //    {
-            //        string currentRev = reader.GetString(0);
-            //        string thisRev = reader.GetString(1);
-            //        // only use the current bill revision
-            //        if (currentRev == thisRev) // if (current bill revision == this revision)
-            //        {
-            //            traveler.BlankSize = reader.GetString(2);
-            //            traveler.BlankNo = reader.GetString(3);
-            //            traveler.PartsPerBlank = Convert.ToInt32(reader.GetString(4));
-            //            break;
-            //        }
-            //    }
-            //    reader.Close();
-            //}
+            tableRef.Close();
         }
         private bool IsTable(string s)
         {
@@ -476,7 +414,18 @@ namespace Quick_Ship_Router
                     row++;
                     // Blank
                     range = outputSheet.get_Range("B" + row, "C" + row);
-                    range.Item[1].Value2 = traveler.BlankNo + "   " + traveler.BlankSize + " (" + traveler.PartsPerBlank + " per blank)";
+                    string blankInfo = "";
+                    if (traveler.BlankNo != "")
+                    {
+                        blankInfo += traveler.BlankNo;
+                    } else
+                    {
+                        blankInfo += traveler.BlankColor;
+                    }
+                    blankInfo += "   (" + traveler.BlankSize + ") [" + traveler.SheetSize + "]";
+                    blankInfo += " " + traveler.PartsPerBlank + " per blank";
+                    if (traveler.BlankComment != "") blankInfo += " " + traveler.BlankComment;
+                    range.Item[1].Value2 = blankInfo;
                     range.Item[2].Value2 = traveler.BlankQuantity;
                     row++;
                     // Leftover
@@ -528,6 +477,11 @@ namespace Quick_Ship_Router
                         hardware += (hardware.Length > 0 ? "," : "") + "(" + component.TotalQuantity + ") " + component.ItemCode;
                     }
                     range.Value2 = hardware;
+                    row++;
+                    // Pallet
+                    range = outputSheet.get_Range("B" + row, "C" + row);
+                    range.Item[1].Value2 = traveler.PalletSize;
+                    range.Item[2].Value2 = traveler.PalletQty;
                     row++;
                     // COMMENT
                     if (traveler.Orders.Exists(x => x.Comment != ""))
@@ -637,10 +591,6 @@ namespace Quick_Ship_Router
         private ListView m_tableListView = null;
         private Label m_infoLabel = null;
         private ProgressBar m_progressBar = null;
-        private Excel.Worksheet m_crossRef = null;
-        private Excel.Worksheet m_boxRef = null;
-        private Excel.Worksheet m_blankRef = null;
-        private Excel.Worksheet m_colorRef = null;
         private bool m_checkPrinted = true;
         private List<Order> m_orders = new List<Order>();
         private List<Table> m_travelers = new List<Table>();

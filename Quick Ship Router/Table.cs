@@ -51,9 +51,14 @@ namespace Quick_Ship_Router
         private string m_blankNo = "";
         private string m_blankColor = "";
         private string m_blankSize = "";
+        private string m_sheetSize = "";
+        private string m_blankComment = "";
         private int m_partsPerBlank = 0;
         private int m_blankQuantity = 0;
         private int m_leftoverParts = 0;
+        // pallet
+        private string m_palletSize = "";
+        private int m_palletQty = 0;
 
         public int ColorNo
         {
@@ -156,6 +161,58 @@ namespace Quick_Ship_Router
             set
             {
                 m_blankColor = value;
+            }
+        }
+
+        public string SheetSize
+        {
+            get
+            {
+                return m_sheetSize;
+            }
+
+            set
+            {
+                m_sheetSize = value;
+            }
+        }
+
+        public string BlankComment
+        {
+            get
+            {
+                return m_blankComment;
+            }
+
+            set
+            {
+                m_blankComment = value;
+            }
+        }
+
+        public string PalletSize
+        {
+            get
+            {
+                return m_palletSize;
+            }
+
+            set
+            {
+                m_palletSize = value;
+            }
+        }
+
+        public int PalletQty
+        {
+            get
+            {
+                return m_palletQty;
+            }
+
+            set
+            {
+                m_palletQty = value;
             }
         }
     }
