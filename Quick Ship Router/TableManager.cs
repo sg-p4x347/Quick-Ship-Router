@@ -214,10 +214,10 @@ namespace Quick_Ship_Router
                     // BLANK INFO
                     //--------------------------------------------
 
-                    traveler.BlankSize = row[1];
-                    traveler.SheetSize = row[2];
-                    // [column 3 contains # of blanks per sheet]
-                    traveler.PartsPerBlank = row[4] != "" ? Convert.ToInt32(row[4]) : 0;
+                    traveler.BlankSize = row[2];
+                    traveler.SheetSize = row[3];
+                    // [column 4 contains # of blanks per sheet]
+                    traveler.PartsPerBlank = row[5] != "" ? Convert.ToInt32(row[5]) : 0;
 
                     // Exception cases -!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
                     List<int> exceptionColors = new List<int> { 60, 50, 49 };
@@ -230,14 +230,14 @@ namespace Quick_Ship_Router
                     //!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
                     // check to see if there is a MAGR blank
-                    if (traveler.BlankColor == "MAGR" && row[5] != "")
-                    {
-                        traveler.BlankNo = row[5];
-                    }
-                    // check to see if there is a CHOK blank
-                    else if (traveler.BlankColor == "CHOK" && row[6] != "")
+                    if (traveler.BlankColor == "MAGR" && row[6] != "")
                     {
                         traveler.BlankNo = row[6];
+                    }
+                    // check to see if there is a CHOK blank
+                    else if (traveler.BlankColor == "CHOK" && row[7] != "")
+                    {
+                        traveler.BlankNo = row[7];
                     }
                     // there are is no specific blank size in the kanban
                     else
@@ -253,8 +253,8 @@ namespace Quick_Ship_Router
                     //--------------------------------------------
                     // PACK & BOX INFO
                     //--------------------------------------------
-                    traveler.SupPack = row[7];
-                    traveler.RegPack = row[8];
+                    traveler.SupPack = row[8];
+                    traveler.RegPack = row[9];
                     foreach (Order order in traveler.Orders)
                     {
                         // Get box information
@@ -272,7 +272,7 @@ namespace Quick_Ship_Router
                     //--------------------------------------------
                     // PALLET
                     //--------------------------------------------
-                    traveler.PalletSize = row[10];
+                    traveler.PalletSize = row[11];
 
                     break;
                 }
