@@ -260,11 +260,13 @@ namespace Quick_Ship_Router
                         // Get box information
                         if (order.ShipVia != "" && (order.ShipVia.ToUpper().IndexOf("FEDEX") != -1 || order.ShipVia.ToUpper().IndexOf("UPS") != -1))
                         {
-                            traveler.SupPackQty += order.QuantityOrdered;
+                            // don't make boxes for items in inventory (mostly super packed)
+                            traveler.SupPackQty += order.QuantityOrdered - order.QuantityOnHand;
                         }
                         else
                         {
-                            traveler.RegPackQty += order.QuantityOrdered;
+                            // don't make boxes for items in inventory
+                            traveler.RegPackQty += order.QuantityOrdered - order.QuantityOnHand;
                             // approximately 20 max tables per pallet
                             traveler.PalletQty += Convert.ToInt32(Math.Ceiling(Convert.ToDouble(order.QuantityOrdered) / 20));
                         }
@@ -456,7 +458,7 @@ namespace Quick_Ship_Router
                     {
                         range = outputSheet.get_Range("B" + row, "C" + row);
                         range.Item[1].Value2 = traveler.Assm.QuantityPerBill + " " + traveler.Assm.Unit;
-                        range.Item[2].Value2 = traveler.Assm.QuantityPerBill * traveler.Quantity + " " + traveler.Vector.Unit;
+                        range.Item[2].Value2 = traveler.Assm.QuantityPerBill * (traveler.RegPackQty + traveler.SupPackQty) + " " + traveler.Vector.Unit;
                     }
                     row++;
                     // Regular pack
@@ -506,7 +508,7 @@ namespace Quick_Ship_Router
                     // Part
                     range = outputSheet.get_Range("B" + row, "C" + row);
                     range.Item[1] = traveler.Part.BillNo;
-                    range.Item[2] = traveler.Quantity;
+                    range.Item[2] = traveler.SupPackQty + traveler.RegPackQty;
                     row++;
                     // Description
                     range = outputSheet.get_Range("B" + row, "B" + row);

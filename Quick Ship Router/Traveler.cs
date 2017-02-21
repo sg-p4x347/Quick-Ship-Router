@@ -93,6 +93,12 @@ namespace Quick_Ship_Router
                         stringToken += ch;
                     }
                 }
+                // set the quantity to the sum of the orders
+                m_quantity = 0;
+                foreach (Order order in m_orders)
+                {
+                    m_quantity += order.QuantityOrdered;
+                }
             }
             catch (Exception ex)
             {

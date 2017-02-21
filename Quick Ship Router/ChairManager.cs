@@ -119,28 +119,17 @@ namespace Quick_Ship_Router
         private void ImportInformation(BackgroundWorker backgroundWorker1)
         {
             int index = 0;
-            foreach (Chair traveler in m_travelers)
+            foreach (Chair chair in m_travelers)
             {
-                if (traveler.Part == null) traveler.ImportPart(MAS);
+                if (chair.Part == null) chair.ImportPart(MAS);
                 backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Chair Info...");
-                traveler.CheckInventory(MAS);
+                chair.CheckInventory(MAS);
                 // update and total the final parts
-                traveler.Part.TotalQuantity = traveler.Quantity;
-                traveler.FindComponents(traveler.Part);
+                chair.Part.TotalQuantity = chair.Quantity;
+                chair.FindComponents(chair.Part);
                 // chair specific
-                GetBoxInfo(traveler);
+                GetBoxInfo(chair);
             }
-        }
-        private void GetBoxInfo(Chair traveler)
-        {
-            if (traveler.PartNo[traveler.PartNo.Length-1] == '4')
-            {
-                traveler.PartsPerBox = 4;
-            } else
-            {
-                traveler.PartsPerBox = 6;
-            }
-            traveler.RegPackQty = traveler.Quantity / traveler.PartsPerBox;
         }
         private bool IsChair(string s)
         {
@@ -208,6 +197,25 @@ namespace Quick_Ship_Router
             }
             m_chairListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.ColumnContent);
             m_chairListView.AutoResizeColumns(ColumnHeaderAutoResizeStyle.HeaderSize);
+        }
+        public void GetBoxInfo(Chair chair)
+        {
+            // open the table ref csv file
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            System.IO.StreamReader chairRef = new StreamReader(System.IO.Path.Combine(exeDir, "Chair Reference.csv"));
+            chairRef.ReadLine(); // read past the header
+            string line = chairRef.ReadLine();
+            while (line != "" && line != null)
+            {
+                string[] row = line.Split(',');
+                if (chair.PartNo.Contains(row[0]))
+                {
+                    chair.BoxQty = Convert.ToInt32(Math.Ceiling(Convert.ToDouble(chair.Quantity) / Convert.ToDouble(row[1]))); // divide by the number of chairs that fit into a box ( rouding up to the nearest integer)
+                    break;
+                }
+                line = chairRef.ReadLine();
+            }
+            chairRef.Close();
         }
         //=======================
         // Printing
@@ -332,7 +340,7 @@ namespace Quick_Ship_Router
                     // Regular pack
                     range = outputSheet.get_Range("B" + row, "C" + row);
                     range.Item[1].Value2 = (traveler.BoxItemCode == "" ? traveler.RegPack : "Use box: " + traveler.BoxItemCode);
-                    range.Item[2].Value2 = "?"; // traveler.RegPackQty;
+                    range.Item[2].Value2 = traveler.BoxQty; // traveler.RegPackQty;
                     row++;
                     // Box rate
                     if (traveler.Box != null)

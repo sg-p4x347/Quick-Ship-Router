@@ -35,6 +35,21 @@ namespace Quick_Ship_Router
         //===========================
         // Private
         //===========================
+        private int m_boxQty;
+
+        public int BoxQty
+        {
+            get
+            {
+                return m_boxQty;
+            }
+
+            set
+            {
+                m_boxQty = value;
+            }
+        }
+
         private void GetBlacklist()
         {
             m_blacklist.Add(new BlacklistItem("/")); // Misc work items
