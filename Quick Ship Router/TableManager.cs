@@ -167,12 +167,18 @@ namespace Quick_Ship_Router
                 if (traveler.Part == null) traveler.ImportPart(MAS);
                 backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Table Info...");
                 traveler.CheckInventory(MAS);
+                
+                // Table specific
+                GetColorInfo(traveler);
+                GetTableInfo(traveler); // sets the number of blanks & finds leftover parts
+                int leftoverParts = traveler.LeftoverParts;
+                traveler.Quantity += leftoverParts;
+                GetTableInfo(traveler); // recalculate for the new total
+                traveler.LeftoverParts = leftoverParts;
                 // update and total the final parts
                 traveler.Part.TotalQuantity = traveler.Quantity;
                 traveler.FindComponents(traveler.Part);
-                // Table specific
-                GetColorInfo(traveler);
-                GetTableInfo(traveler);
+
                 index++;
             }
         }
@@ -254,9 +260,16 @@ namespace Quick_Ship_Router
                     // PACK & BOX INFO
                     //--------------------------------------------
                     traveler.SupPack = row[8];
+                    traveler.SupPackQty = 0;
                     traveler.RegPack = row[9];
+                    traveler.RegPackQty = 0;
+
+                    int qtyOnHand = 0;
+                    int qtyOrdered = 0;
                     foreach (Order order in traveler.Orders)
                     {
+                        qtyOnHand += order.QuantityOnHand;
+                        qtyOrdered += order.QuantityOrdered;
                         // Get box information
                         if (order.ShipVia != "" && (order.ShipVia.ToUpper().IndexOf("FEDEX") != -1 || order.ShipVia.ToUpper().IndexOf("UPS") != -1))
                         {
@@ -271,6 +284,15 @@ namespace Quick_Ship_Router
                             traveler.PalletQty += Convert.ToInt32(Math.Ceiling(Convert.ToDouble(order.QuantityOrdered) / 20));
                         }
                     }
+                    // add boxes for extra items
+                    if (traveler.SupPackQty >= traveler.RegPackQty)
+                    {
+                        traveler.SupPackQty += Math.Max(0,traveler.Quantity - (qtyOrdered - qtyOnHand));
+                    } else
+                    {
+                        traveler.RegPackQty += Math.Max(0,traveler.Quantity - (qtyOrdered - qtyOnHand));
+                    }
+
                     //--------------------------------------------
                     // PALLET
                     //--------------------------------------------
@@ -316,7 +338,7 @@ namespace Quick_Ship_Router
                     totalOrdered += order.QuantityOrdered;
                     dateList += (i == 0 ? "" : ", ") + order.ShipDate.ToString("MM/dd/yyyy");
                     customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                    orderList += (i == 0 ? "" : ", ") + order.SalesOrderNo;
+                    orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo + (order.Comment != "" ? " [" + order.Comment + "]" : "");
                     i++;
                 }
                 string[] row = {
@@ -373,7 +395,7 @@ namespace Quick_Ship_Router
                         //if (order.QuantityOrdered > order.QuantityOnHand)
                         //{
                             customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                            orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+                            orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo + (order.Comment != "" ? " [" + order.Comment + "]" : "");
                         //}
                         i++;
                     }
@@ -485,14 +507,6 @@ namespace Quick_Ship_Router
                     range.Item[1].Value2 = traveler.PalletSize;
                     range.Item[2].Value2 = traveler.PalletQty;
                     row++;
-                    // COMMENT
-                    if (traveler.Orders.Exists(x => x.Comment != ""))
-                    {
-                        range = outputSheet.get_Range("A" + row, "C" + row);
-                        range.Item[1].Value2 = "Comment:";
-                        range.Item[2].Value2 = traveler.Orders.Find(x => x.Comment != "").Comment;
-                        row++;
-                    }
                     
                     //#####################
                     // Box Construction

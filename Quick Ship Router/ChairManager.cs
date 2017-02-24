@@ -179,7 +179,7 @@ namespace Quick_Ship_Router
                     totalOrdered += order.QuantityOrdered;
                     dateList += (i == 0 ? "" : ", ") + order.ShipDate.ToString("MM/dd/yyyy");
                     customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                    orderList += (i == 0 ? "" : ", ") + order.SalesOrderNo;
+                    orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo + (order.Comment != "" ? " [" + order.Comment + "]" : "");
                     i++;
                 }
                 string[] row = {
@@ -245,7 +245,7 @@ namespace Quick_Ship_Router
                     foreach (Order order in traveler.Orders)
                     {
                         customerList += (i == 0 ? "" : ", ") + order.CustomerNo;
-                        orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo;
+                        orderList += (i == 0 ? "" : ", ") + "(" + order.QuantityOrdered + ") " + order.SalesOrderNo + (order.Comment != "" ? " [" + order.Comment + "]" : "");
                         i++;
                     }
                     //#####################

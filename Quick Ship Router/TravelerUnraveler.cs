@@ -111,17 +111,24 @@ namespace Traveler_Unraveler
             var workbook = workbooks.Open(System.IO.Path.Combine(exeDir, "Production traveler.xlsx"),
                 0, false, 5, "", "", false, 2, "",
                 true, false, 0, true, false, false);
+            var boxBook = workbooks.Open(System.IO.Path.Combine(exeDir, "traveler.xlsx"),
+                0, false, 5, "", "", false, 2, "",
+                true, false, 0, true, false, false);
+            
             var worksheets = workbook.Worksheets;
-            var templateSheet = (Excel.Worksheet)worksheets.get_Item("Sheet1");
+            var boxSheets = boxBook.Worksheets;
 
+            var templateSheet = (Excel.Worksheet)worksheets.get_Item("Sheet1");
+            var boxTemplate = (Excel.Worksheet)boxSheets.get_Item("Panel");
             // create the output workbook
             int currentSheet = 2;
             int index = 0;
             foreach (Traveler traveler in travelers)
             {
                 templateSheet.Copy(Type.Missing, workbook.Worksheets[currentSheet - 1]);
-
+                boxTemplate.Copy(Type.Missing, boxBook.Worksheets[currentSheet - 1]);
                 Excel.Worksheet outputSheet = workbook.Worksheets[currentSheet];
+                Excel.Worksheet boxSheet = boxBook.Worksheets[currentSheet];
                 // Part
                 Excel.Range excelCell = (Excel.Range)outputSheet.get_Range("A2", "A2");
                 excelCell.Value2 = traveler.GetPart().BillNo + "        " + traveler.GetPart().BillDesc;
@@ -210,6 +217,62 @@ namespace Traveler_Unraveler
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing,
                     Type.Missing, Type.Missing, Type.Missing, Type.Missing);
                 //###################################
+
+                //// CONFIGURE THE BOX SHEET==================================
+                //// open the table ref csv file
+                //System.IO.StreamReader tableRef = new StreamReader(System.IO.Path.Combine(exeDir, "Front Panel Reference.csv"));
+                //tableRef.ReadLine(); // read past the header
+                //string line = tableRef.ReadLine();
+                //while (line != "")
+                //{
+                //    string[] refRow = line.Split(',');
+                //    if (refRow[1] == traveler.GetPart().BillNo)
+                //    {
+                //        int excelRow = 2;
+                //        excelRow++;
+                //        // Part
+                //        var range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "C" + excelRow);
+                //        range.Item[1].Value2 = traveler.GetPart().BillNo;
+                //        range.Item[2].Value2 = traveler.GetPart().QuantityPerBill;
+                //        excelRow++;
+                //        // Description
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[2];
+                //        excelRow++;
+                //        // Box Width
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[3];
+                //        excelRow++;
+                //        // Score A
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[4];
+                //        excelRow++;
+                //        // Score B
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[5];
+                //        excelRow++;
+                //        // Description
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[6];
+                //        excelRow++;
+                //        // Description
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[7];
+                //        excelRow++;
+                //        // Description
+                //        range = (Excel.Range)outputSheet.get_Range("B" + excelRow, "B" + excelRow);
+                //        range.Value2 = refRow[8];
+                //        excelRow++;
+                //        break;
+                //    }
+                //}
+
+                ////##### Print the Box sheet #######
+                //boxSheet.PrintOut(
+                //    Type.Missing, Type.Missing, Type.Missing, Type.Missing,
+                //    Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+                ////###################################
+                ////==========================================================
 
                 //####### Print the drawing #########
 

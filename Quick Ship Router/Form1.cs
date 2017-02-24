@@ -162,7 +162,7 @@ namespace Quick_Ship_Router
         private bool ImportOrders(Mode mode)
         {
             //infoLabel.Text = "Importing Orders...";
-
+            
             string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
             // OrderDate >= {d '" +  todayString + "'}
             string customerNames = "";
@@ -185,24 +185,25 @@ namespace Quick_Ship_Router
             // read info
             while (reader.Read())
             {
+                List<Order> newOrders = new List<Order>();
                 // get information from detail
                 OdbcCommand detailCommand = MAS.CreateCommand();
-                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure, ItemCodeDesc FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
+                detailCommand.CommandText = "SELECT ItemCode, QuantityOrdered, UnitOfMeasure, CommentText FROM SO_SalesOrderDetail WHERE SalesOrderNo = '" + reader.GetString(0) + "'";
                 OdbcDataReader detailReader = detailCommand.ExecuteReader();
                 // Read each line of the Sales Order, looking for the base Table items, ignoring kits
-
+                string comment = "";
                 while (detailReader.Read())
                 {
-                    string comment = "";
+                    
                     // Import bill & quantity 
                     string billCode = detailReader.GetString(0);
-                    if (billCode == "/C")
+                    if (billCode == "/C" && !detailReader.IsDBNull(3))
                     {
                         comment = detailReader.GetString(3);
                     }
                     if (!detailReader.IsDBNull(2) && detailReader.GetString(2) != "KIT")
                     {
-                        if (IsTable(billCode))
+                        if (IsTable(billCode) || IsChair(billCode) || IsBackPanel(billCode))
                         {
                             // this is a table
                             Order order = new Order();
@@ -227,73 +228,27 @@ namespace Quick_Ship_Router
                             {
                                 order.OrderDate = reader.GetDate(4);
                             }
-                            order.Comment = comment;
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
-                            tableManager.Orders.Add(order);
-                        } else if (IsChair(billCode))
-                        {
-                            // this is a table
-                            Order order = new Order();
-                            // scrap this order if anything is missing
-                            if (!reader.IsDBNull(0))
-                            {
-                                order.SalesOrderNo = reader.GetString(0);
-                            }
-                            if (!reader.IsDBNull(1))
-                            {
-                                order.CustomerNo = reader.GetString(1);
-                            }
-                            if (!reader.IsDBNull(2))
-                            {
-                                order.ShipVia = reader.GetString(2);
-                            }
-                            if (!reader.IsDBNull(3))
-                            {
-                                order.ShipDate = reader.GetDate(3);
-                            }
-                            if (!reader.IsDBNull(4))
-                            {
-                                order.OrderDate = reader.GetDate(4);
-                            }
-                            order.Comment = comment;
-                            order.ItemCode = billCode;
-                            order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
-                            chairManager.Orders.Add(order);
-                        } else if (IsBackPanel(billCode))
-                        {
-                            // this is probably a back panel for an apex standup desk
-                            Order order = new Order();
-                            // scrap this order if anything is missing
-                            if (!reader.IsDBNull(0))
-                            {
-                                order.SalesOrderNo = reader.GetString(0);
-                            }
-                            if (!reader.IsDBNull(1))
-                            {
-                                order.CustomerNo = reader.GetString(1);
-                            }
-                            if (!reader.IsDBNull(2))
-                            {
-                                order.ShipVia = reader.GetString(2);
-                            }
-                            if (!reader.IsDBNull(3))
-                            {
-                                order.ShipDate = reader.GetDate(3);
-                            }
-                            if (!reader.IsDBNull(4))
-                            {
-                                order.OrderDate = reader.GetDate(4);
-                            }
-                            order.Comment = comment;
-                            order.ItemCode = billCode;
-                            order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
-                            travelerUnraveler.AddOrder(order);
-                        }
-
+                            newOrders.Add(order);
+                        } 
                     }
                 }
                 detailReader.Close();
+                foreach (Order order in newOrders)
+                {
+                    order.Comment = comment;
+                    if (IsChair(order.ItemCode))
+                    {
+                        chairManager.Orders.Add(order);
+                    } else if (IsTable(order.ItemCode))
+                    {
+                        tableManager.Orders.Add(order);
+                    } else if (IsBackPanel(order.ItemCode))
+                    {
+                        travelerUnraveler.AddOrder(order);
+                    }
+                }
             }
             reader.Close();
             //infoLabel.Text = "";
