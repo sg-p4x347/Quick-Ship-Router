@@ -211,8 +211,13 @@ namespace Quick_Ship_Router
             System.IO.StreamReader tableRef = new StreamReader(System.IO.Path.Combine(exeDir, "Table Reference.csv"));
             tableRef.ReadLine(); // read past the header
             string line = tableRef.ReadLine();
-            while (line != "")
+            while (!tableRef.EndOfStream)
             {
+                if (line == null)
+                {
+                    line = tableRef.ReadLine();
+                    continue;
+                }
                 string[] row = line.Split(',');
                 if (row[0] == traveler.ShapeNo)
                 {
@@ -263,6 +268,7 @@ namespace Quick_Ship_Router
                     traveler.SupPackQty = 0;
                     traveler.RegPack = row[9];
                     traveler.RegPackQty = 0;
+                    traveler.PalletQty = 0;
 
                     int qtyOnHand = 0;
                     int qtyOrdered = 0;
@@ -271,17 +277,17 @@ namespace Quick_Ship_Router
                         qtyOnHand += order.QuantityOnHand;
                         qtyOrdered += order.QuantityOrdered;
                         // Get box information
-                        if (order.ShipVia != "" && (order.ShipVia.ToUpper().IndexOf("FEDEX") != -1 || order.ShipVia.ToUpper().IndexOf("UPS") != -1))
-                        {
-                            // don't make boxes for items in inventory (mostly super packed)
-                            traveler.SupPackQty += order.QuantityOrdered - order.QuantityOnHand;
-                        }
-                        else
+                        if (order.ShipVia.ToUpper() == "PPADD" || order.ShipVia.ToUpper() == "UNSP")
                         {
                             // don't make boxes for items in inventory
                             traveler.RegPackQty += order.QuantityOrdered - order.QuantityOnHand;
                             // approximately 20 max tables per pallet
                             traveler.PalletQty += Convert.ToInt32(Math.Ceiling(Convert.ToDouble(order.QuantityOrdered) / 20));
+                        }
+                        else
+                        {
+                            // don't make boxes for items in inventory (mostly super packed)
+                            traveler.SupPackQty += order.QuantityOrdered - order.QuantityOnHand;
                         }
                     }
                     // add boxes for extra items

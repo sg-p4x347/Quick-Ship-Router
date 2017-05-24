@@ -125,9 +125,9 @@ namespace Quick_Ship_Router
                         pallets.Add(new BlankItem(table.PalletSize, table.PalletQty));
                     }
                     // total work
-                    totalCNC += table.Cnc.TotalQuantity;
-                    totalVector += table.Vector.TotalQuantity;
-                    totalPack += table.Assm.TotalQuantity;
+                    totalCNC += table.Cnc != null ? table.Cnc.TotalQuantity : 0;
+                    totalVector += table.Vector != null ? table.Vector.TotalQuantity : 0;
+                    totalPack += table.Assm != null ? table.Assm.TotalQuantity : 0;
                 }
             }
             if (chairs != null)

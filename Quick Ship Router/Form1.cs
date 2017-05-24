@@ -231,7 +231,7 @@ namespace Quick_Ship_Router
                             order.ItemCode = billCode;
                             order.QuantityOrdered = Convert.ToInt32(detailReader.GetValue(1));
                             newOrders.Add(order);
-                        } 
+                        }
                     }
                 }
                 detailReader.Close();
