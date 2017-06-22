@@ -28,8 +28,12 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID,string fromS, string toS)
         {
+            int from = 0;
+            int to = 0;
+            Int32.TryParse(fromS, out from);
+            Int32.TryParse(toS, out to);
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
             m_travelers.Clear();
@@ -38,6 +42,8 @@ namespace Quick_Ship_Router
             //==========================================
             // Remove any orders that have been printed
             //==========================================
+            List<Traveler> travelersToNotDelete = new List<Traveler>();
+            int deletedQty = 0;
             string line;
             System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
             while ((line = file.ReadLine()) != null && line != "")
@@ -47,7 +53,34 @@ namespace Quick_Ship_Router
                 {
                     case Mode.CreatePrinted:
                         // just add this traveler to the finished list
-                        if (IsChair(printedTraveler.PartNo)) Travelers.Add(new Chair(line));
+                        if (IsChair(printedTraveler.PartNo))
+                        {
+                            Chair chair = new Chair(line);
+                            if (chair.ID >= from && chair.ID <= to)
+                            {
+                                Travelers.Add(chair);
+                                foreach (Order order in chair.Orders)
+                                {
+                                    Order loadedOrder = m_orders.Find(o => o.SalesOrderNo == order.SalesOrderNo);
+                                    if (loadedOrder != null)
+                                    {
+                                        order.ShipDate = loadedOrder.ShipDate;
+                                        order.ShipVia = loadedOrder.ShipVia;
+                                        order.OrderDate = loadedOrder.OrderDate;
+                                        order.ProductLine = loadedOrder.ProductLine;
+                                        order.CustomerNo = loadedOrder.CustomerNo;
+                                    }
+                                }
+                            }
+
+                            }
+                        break;
+                    case Mode.DeletePrinted:
+                        //if (IsChair(printedTraveler.PartNo))
+                        //{
+                        //    Chair chair = new Chair(line);
+                        //    if (!(chair.ID >= from && chair.ID <= to)) { travelersToNotDelete.Add(chair); } else { deletedQty++; }
+                        //}
                         break;
                     case Mode.CreateSpecific:
                         if (printedTraveler.ID.ToString("D6") == specificID && IsChair(printedTraveler.PartNo))
@@ -77,7 +110,23 @@ namespace Quick_Ship_Router
                 }
             }
             file.Close();
-            if (mode != Mode.CreatePrinted)
+            // delete the travelers
+            if (mode == Mode.DeletePrinted)
+            {
+                //File.Delete(System.IO.Path.Combine(exeDir, "printed.json"));
+                //System.IO.StreamWriter newFile = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
+                //foreach (Chair traveler in travelersToNotDelete)
+                //{
+
+                    
+                //    newFile.Write(traveler.Export());
+                //}
+                //newFile.Close();
+                //m_infoLabel.Text = "Deleted " + deletedQty + " chair travelers";
+            }
+
+            
+            if (mode != Mode.CreateEATS && mode != Mode.CreatePrinted && mode != Mode.DeletePrinted)
             {
                 //==========================================
                 // compile the travelers

@@ -18,7 +18,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
 using TravelerUnraveler = Traveler_Unraveler.TravelerUnraveler;
-
+using EATS = Efficient_Automatic_Traveler_System;
 namespace Quick_Ship_Router
 {
     enum Mode
@@ -27,7 +27,9 @@ namespace Quick_Ship_Router
         CreateUnselected,
         CreateSpecific,
         CreatePrinted,
+        DeletePrinted,
         CreateAll,
+        CreateEATS
     }
     public partial class Form1 : Form
     {
@@ -122,15 +124,16 @@ namespace Quick_Ship_Router
         private bool CreateTravelers(CreationParams cp)
         {
             // Import new orders
-            if (cp.mode == Mode.CreatePrinted || ImportOrders(cp.mode))
+            //if (cp.mode == Mode.CreatePrinted)
             {
+                ImportOrders(cp.mode);
                 // for a specific traveler ID
                 int travelerID = 0;
                 try
                 {
                     if (specificOrder.Text.Length < 7)
                     {
-                        travelerID = Convert.ToInt32(specificOrder.Text);
+                        Int32.TryParse(specificOrder.Text, out travelerID);
                     }
                 }
                 catch (Exception ex)
@@ -138,8 +141,8 @@ namespace Quick_Ship_Router
 
                 }
                 // Create travelers
-                tableManager.CompileTravelers(backgroundWorker1, cp.mode,travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
-                chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text);
+                tableManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : cp.specificID,fromTraveler.Text, toTraveler.Text);
+                chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text, fromTraveler.Text,toTraveler.Text);
                 travelerUnraveler.CreateTravelers();
                 return true;
             }
@@ -161,6 +164,7 @@ namespace Quick_Ship_Router
         //======================
         private bool ImportOrders(Mode mode)
         {
+
             //infoLabel.Text = "Importing Orders...";
             
             string today = DateTime.Today.ToString(@"yyyy\-MM\-dd");
@@ -241,19 +245,70 @@ namespace Quick_Ship_Router
                     if (IsChair(order.ItemCode))
                     {
                         chairManager.Orders.Add(order);
-                    } else if (IsTable(order.ItemCode))
+                    }
+                    else if (IsTable(order.ItemCode))
                     {
                         tableManager.Orders.Add(order);
-                    } else if (IsBackPanel(order.ItemCode))
+                    }
+                    else if (IsBackPanel(order.ItemCode))
                     {
                         travelerUnraveler.AddOrder(order);
                     }
                 }
             }
             reader.Close();
+            
             //infoLabel.Text = "";
             return true;
         }
+        //private void AllocateCurrentInventoryForCurrentOrders()
+        //{
+        //    // get all orderItems in one list
+        //    List<Order> allItems = new List<Order> m_orders;
+        //    // get all unique itemCodes on order
+        //    List<string> itemCodes = allItems.GroupBy(x => x.ItemCode).Select(y => y.First()).Select(z => z.ItemCode).ToList();
+        //    // for all itemCodes on order
+        //    foreach (string itemCode in itemCodes)
+        //    {
+        //        // Get the number of available [itemCode] items in MAS inventory
+        //        int available = 0;
+        //        if (MAS.State != System.Data.ConnectionState.Open) throw new Exception("MAS is in a closed state!");
+        //        OdbcCommand command = MAS.CreateCommand();
+        //        command.CommandText = "SELECT QuantityOnSalesOrder, QuantityOnHand, QuantityOnBackOrder FROM IM_ItemWarehouse WHERE ItemCode = '" + itemCode + "'";
+        //        OdbcDataReader reader = command.ExecuteReader();
+        //        int SOqty = 0;
+        //        if (reader.Read())
+        //        {
+        //            // avialable = onHand
+        //            available = Convert.ToInt32(reader.GetValue(1));
+        //            SOqty = Convert.ToInt32(reader.GetValue(0)) + Convert.ToInt32(reader.GetValue(2));
+        //        }
+        //        reader.Close();
+        //        int qtyOnSO = 0;
+        //        // get all Open OrderItem(s) with this itemCode
+        //        List<OrderItem> items = allItems.Where(x => x.ItemCode == itemCode).ToList();
+        //        // add hold order's quantities to available
+        //        available += items.Where(i => i.Parent.Status == OrderStatus.Hold).Sum(j => j.QtyNeeded);
+        //        // remove all non-open items
+        //        items.RemoveAll(i => i.Parent.Status != OrderStatus.Open);
+        //        // sort the list in ascending order with respect to the ship date
+        //        items.Sort((i, j) => i.Parent.ShipDate.CompareTo(j.Parent.ShipDate));
+
+        //        // for each OrderItem that has this itemCode;
+        //        foreach (OrderItem item in items)
+        //        {
+        //            qtyOnSO += item.QtyNeeded;
+        //            // allocate as much as possible to this OrderItem
+        //            item.QtyOnHand = Math.Min(item.QtyNeeded, available);
+        //            // subtract from the avilable supply
+        //            available -= item.QtyOnHand;
+        //        }
+        //        if (SOqty != qtyOnSO)
+        //        {
+        //            //Server.WriteLine("MAS inventory inconsistency for " + itemCode + " : " + qtyOnSO + " " + SOqty + items.Select(i => i.Parent.SalesOrderNo + " " + i.QtyOrdered).ToList().Stringify(false) );
+        //        }
+        //    }
+        //}
         private bool IsTable(string s)
         {
             return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
@@ -466,6 +521,28 @@ namespace Quick_Ship_Router
         private void chckTables_CheckedChanged(object sender, EventArgs e)
         {
             summary = null;
+        }
+
+        private void btnLoadEATS_Click(object sender, EventArgs e)
+        {
+            if (clearBefore.Checked) Clear();
+            openFileDialog.ShowDialog();
+        }
+
+        private void openFileDialog_FileOk(object sender, CancelEventArgs e)
+        {
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.CreateEATS, openFileDialog.FileName));
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void deleteTravelers_Click(object sender, EventArgs e)
+        {
+            if (clearBefore.Checked) Clear();
+            backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.DeletePrinted, ""));
         }
     }
 }

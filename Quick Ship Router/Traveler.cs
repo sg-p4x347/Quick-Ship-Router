@@ -334,7 +334,7 @@ namespace Quick_Ship_Router
             string doc = "";
             doc += "{";
             doc += "\"ID\":" + '"' + m_ID.ToString("D6") + '"' + ",";
-            doc += "\"itemCode\":" + '"' + m_part.BillNo + '"' + ",";
+            doc += "\"itemCode\":" + '"' + m_partNo + '"' + ",";
             doc += "\"quantity\":" + '"' + m_quantity + '"' + ",";
             doc += "\"type\":" + '"' + this.GetType().Name + '"' + ",";
             doc += "\"orders\":[";
@@ -408,6 +408,10 @@ namespace Quick_Ship_Router
             get
             {
                 return m_ID;
+            }
+            set
+            {
+                m_ID = value;
             }
         }
 

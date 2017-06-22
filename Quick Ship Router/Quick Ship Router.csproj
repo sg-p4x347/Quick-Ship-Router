@@ -63,6 +63,10 @@
     <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Efficient Automatic Traveler System, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\Efficient Automatic Traveler System.dll</HintPath>
+    </Reference>
     <Reference Include="Spire.Pdf, Version=3.2.52.56040, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\FreeSpire.PDF.3.2\lib\net40\Spire.Pdf.dll</HintPath>
@@ -95,6 +99,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Router.cs" />
+    <Compile Include="StringStream.cs" />
     <Compile Include="Summary.cs" />
     <Compile Include="Table.cs" />
     <Compile Include="TableManager.cs" />

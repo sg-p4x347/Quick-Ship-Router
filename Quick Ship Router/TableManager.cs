@@ -15,6 +15,7 @@ using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
 using System.Net;
 using System.Net.Http;
+using EATS = Efficient_Automatic_Traveler_System;
 
 namespace Quick_Ship_Router
 {
@@ -32,8 +33,12 @@ namespace Quick_Ship_Router
         //=======================
         // Travelers
         //=======================
-        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID)
+        public void CompileTravelers(BackgroundWorker backgroundWorker1,Mode mode,string specificID,string fromS, string toS)
         {
+            int from = 0;
+            int to = 0;
+            Int32.TryParse(fromS, out from);
+            Int32.TryParse(toS, out to);
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             // clear any previous travelers
             m_travelers.Clear();
@@ -42,17 +47,81 @@ namespace Quick_Ship_Router
             //==========================================
             // Remove any orders that have been printed
             //==========================================
-            if (m_checkPrinted || mode == Mode.CreatePrinted) {
+            if (mode == Mode.CreateEATS)
+            {
+                string json = File.ReadAllText(specificID);
+                //Dictionary<string, string> EATSimported = new EATS.StringStream(json).ParseJSON();
+                List<string> travelers = new EATS.StringStream(json).ParseJSONarray();
+                //List<string> orders = new EATS.StringStream(EATSimported["orders"]).ParseJSONarray();
+                //List<EATS.Order> EATSorders = new List<EATS.Order>();
+                EATS.Server.RootDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                EATS.BackupManager.Initialize();
+                EATS.OrderManager orderManager = new EATS.OrderManager();
+                
+                orderManager.Import();
+
+
+                foreach (string travelerJSON in travelers)
+                {
+                    Dictionary<string, string> obj = new EATS.StringStream(travelerJSON).ParseJSON();
+                    if (obj["type"] == "Table")
+                    {
+                        Table table = new Table(obj["itemCode"], Convert.ToInt32(obj["quantity"]));
+                        table.ID = Convert.ToInt32(obj["ID"]);
+                        foreach (string orderNo in new EATS.StringStream(obj["parentOrders"]).ParseJSONarray())
+                        {
+                            Order order = new Order();
+                            order.SalesOrderNo = orderNo;
+                            order.ItemCode = obj["itemCode"];
+                            table.Orders.Add(order);
+                        }
+                        Travelers.Add(table);
+                    }
+                }
+            } else
+            if (m_checkPrinted || mode == Mode.CreatePrinted || mode == Mode.DeletePrinted) {
                 string line;
                 System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+                List<Traveler> travelersToNotDelete = new List<Traveler>();
+                int deletedQty = 0;
                 while ((line = file.ReadLine()) != null && line != "")
                 {
                     Traveler printedTraveler = new Traveler(line);
                     switch (mode)
                     {
                         case Mode.CreatePrinted:
-                            // just add this traveler to the finished list
-                            if (IsTable(printedTraveler.PartNo)) Travelers.Add(new Table(line));
+                            // just add this traveler to the finished list (if within the range)
+                            if (IsTable(printedTraveler.PartNo)) {
+                                Table table = new Table(line);
+                                if (table.ID >= from && table.ID <= to)
+                                {
+                                    Travelers.Add(table);
+                                    foreach (Order order in table.Orders)
+                                    {
+                                        Order loadedOrder = m_orders.Find(o => o.SalesOrderNo == order.SalesOrderNo);
+                                        if (loadedOrder != null)
+                                        {
+                                            order.ShipDate = loadedOrder.ShipDate;
+                                            order.ShipVia = loadedOrder.ShipVia;
+                                            order.OrderDate = loadedOrder.OrderDate;
+                                            order.ProductLine = loadedOrder.ProductLine;
+                                            order.CustomerNo = loadedOrder.CustomerNo;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        case Mode.DeletePrinted:
+                            if (!(printedTraveler.ID >= from && printedTraveler.ID <= to)) {
+                                if (IsTable(printedTraveler.PartNo))
+                                {
+                                    travelersToNotDelete.Add(new Table(line));
+                                } else if (IsChair(printedTraveler.PartNo))
+                                {
+                                    travelersToNotDelete.Add(new Chair(line));
+                                }
+                                deletedQty++;
+                            }
                             break;
                         case Mode.CreateSpecific:
                             if (printedTraveler.ID.ToString("D6") == specificID && IsTable(printedTraveler.PartNo))
@@ -61,6 +130,10 @@ namespace Quick_Ship_Router
                                 break;
                             }
                             goto default;
+                        case Mode.CreateEATS:
+                            // remove already printed travelers
+                            Travelers.RemoveAll(t => t.ID == printedTraveler.ID);
+                            break;
                         default:
                             // check to see if these orders have been printed already
                             foreach (Order printedOrder in printedTraveler.Orders)
@@ -82,8 +155,21 @@ namespace Quick_Ship_Router
                     }
                 }
                 file.Close();
+
+                // delete the travelers
+                if (mode == Mode.DeletePrinted) {
+                    File.Delete(System.IO.Path.Combine(exeDir, "printed.json"));
+                    System.IO.StreamWriter newFile = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
+                    foreach (Traveler traveler in travelersToNotDelete)
+                    {
+                        newFile.Write(traveler.Export());
+                    }
+                    newFile.Close();
+                    //backgroundWorker1.ReportProgress( "Deleted " + deletedQty + " table travelers";
+                }
+                
             }
-            if (mode != Mode.CreatePrinted)
+            if (mode != Mode.CreatePrinted && mode != Mode.CreateEATS && mode != Mode.DeletePrinted)
             {
                 //==========================================
                 // compile the travelers
@@ -121,7 +207,7 @@ namespace Quick_Ship_Router
                     index++;
                 }
             }
-            ImportInformation(backgroundWorker1);
+            ImportInformation(backgroundWorker1,mode);
         }
         private Traveler FindTraveler(string s)
         {
@@ -159,14 +245,14 @@ namespace Quick_Ship_Router
             }
             return null;
         }
-        private void ImportInformation(BackgroundWorker backgroundWorker1)
+        private void ImportInformation(BackgroundWorker backgroundWorker1,Mode mode = Mode.CreateAll)
         { 
             int index = 0;
             foreach (Table traveler in m_travelers)
             {
                 if (traveler.Part == null) traveler.ImportPart(MAS);
                 backgroundWorker1.ReportProgress(Convert.ToInt32((Convert.ToDouble(index) / Convert.ToDouble(m_travelers.Count)) * 100), "Gathering Table Info...");
-                traveler.CheckInventory(MAS);
+                if (mode != Mode.CreateEATS) traveler.CheckInventory(MAS);
                 
                 // Table specific
                 GetColorInfo(traveler);
@@ -206,6 +292,19 @@ namespace Quick_Ship_Router
         // calculate how much of each box size
         private void GetTableInfo(Table traveler)
         {
+            // open a MAS connection
+            OdbcCommand command = MAS.CreateCommand();
+            command.CommandText = "SELECT UDF_TABLE_BLANK_NAME, UDF_TABLE_BLANK_SIZE, UDF_TABLE_SHAPE FROM CI_item WHERE itemCode = '" + traveler.PartNo + "'";
+            OdbcDataReader reader = command.ExecuteReader();
+            // read info
+            if (reader.Read())
+            {
+                if (!reader.IsDBNull(0)) traveler.BlankNo = reader.GetString(0);
+                if (!reader.IsDBNull(1)) traveler.BlankSize = reader.GetString(1);
+                //if (!reader.IsDBNull(2)) traveler.ShapeNo = reader.GetString(2);
+                if (traveler.BlankNo == "") traveler.BlankNo = "Missing blank info";
+            }
+                
             // open the table ref csv file
             string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             System.IO.StreamReader tableRef = new StreamReader(System.IO.Path.Combine(exeDir, "Table Reference.csv"));
@@ -225,7 +324,7 @@ namespace Quick_Ship_Router
                     // BLANK INFO
                     //--------------------------------------------
 
-                    traveler.BlankSize = row[2];
+                    //traveler.BlankSize = row[2];
                     traveler.SheetSize = row[3];
                     // [column 4 contains # of blanks per sheet]
                     traveler.PartsPerBlank = row[5] != "" ? Convert.ToInt32(row[5]) : 0;
@@ -235,26 +334,27 @@ namespace Quick_Ship_Router
                     if ((traveler.ShapeNo == "MG2247" || traveler.ShapeNo == "38-2247") && exceptionColors.IndexOf(traveler.ColorNo) != -1)
                     {
                         // Exceptions to the blank parent sheet (certain colors have grain that can't be used with the typical blank)
+                        traveler.BlankSize = "925x1532";
                         traveler.BlankComment = "Use " + traveler.SheetSize + " sheet and align grain";
                         traveler.PartsPerBlank = 2;
                     }
                     //!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!
 
                     // check to see if there is a MAGR blank
-                    if (traveler.BlankColor == "MAGR" && row[6] != "")
-                    {
-                        traveler.BlankNo = row[6];
-                    }
-                    // check to see if there is a CHOK blank
-                    else if (traveler.BlankColor == "CHOK" && row[7] != "")
-                    {
-                        traveler.BlankNo = row[7];
-                    }
-                    // there are is no specific blank size in the kanban
-                    else
-                    {
-                        traveler.BlankNo = "";
-                    }
+                    //if (traveler.BlankColor == "MAGR" && row[6] != "")
+                    //{
+                    //    traveler.BlankNo = row[6];
+                    //}
+                    //// check to see if there is a CHOK blank
+                    //else if (traveler.BlankColor == "CHOK" && row[7] != "")
+                    //{
+                    //    traveler.BlankNo = row[7];
+                    //}
+                    //// there are is no specific blank size in the kanban
+                    //else
+                    //{
+                    //    traveler.BlankNo = "";
+                    //}
                     // calculate production numbers
                     if (traveler.PartsPerBlank <= 0) traveler.PartsPerBlank = 1;
                     decimal tablesPerBlank = Convert.ToDecimal(traveler.PartsPerBlank);
@@ -313,6 +413,24 @@ namespace Quick_Ship_Router
         private bool IsTable(string s)
         {
             return (s.Length == 9 && s.Substring(0, 2) == "MG") || (s.Length == 10 && (s.Substring(0, 3) == "38-" || s.Substring(0, 3) == "41-"));
+        }
+        private bool IsChair(string s)
+        {
+            if (s.Length == 14 && s.Substring(0, 2) == "38")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 5 && parts[1].Length == 4 && parts[2].Length == 3);
+            }
+            else if (s.Length == 15 && s.Substring(0, 4) == "MG11")
+            {
+                string[] parts = s.Split('-');
+                return (parts[0].Length == 6 && parts[1].Length == 4 && parts[2].Length == 3);
+            }
+            else
+            {
+                return false;
+            }
+
         }
         public void DisplayTravelers()
         {
@@ -456,7 +574,7 @@ namespace Quick_Ship_Router
                     blankInfo += " " + traveler.PartsPerBlank + " per blank";
                     if (traveler.BlankComment != "") blankInfo += " " + traveler.BlankComment;
                     range.Item[1].Value2 = blankInfo;
-                    range.Item[2].Value2 = traveler.BlankQuantity;
+                    range.Item[2].Value2 = Math.Max(1,traveler.BlankQuantity);
                     row++;
                     // Leftover
                     range = outputSheet.get_Range("B" + row, "C" + row);

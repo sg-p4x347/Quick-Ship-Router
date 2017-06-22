@@ -35,6 +35,11 @@ namespace Quick_Ship_Router
             m_colorNo = Convert.ToInt32(m_partNo.Substring(m_partNo.Length - 2));
             m_shapeNo = m_partNo.Substring(0, m_partNo.Length - 3);
         }
+        // For creation from the EATS system
+        public Table(string partNo, int quantity, List<Order> orders) : this(partNo, quantity)
+        {
+            m_orders = orders;
+        }
         //===========================
         // Private
         //===========================
