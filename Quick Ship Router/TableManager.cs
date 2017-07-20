@@ -15,7 +15,6 @@ using Marshal = System.Runtime.InteropServices.Marshal;
 using System.Drawing.Printing;
 using System.Net;
 using System.Net.Http;
-using EATS = Efficient_Automatic_Traveler_System;
 
 namespace Quick_Ship_Router
 {
@@ -54,28 +53,41 @@ namespace Quick_Ship_Router
                 List<string> travelers = new EATS.StringStream(json).ParseJSONarray();
                 //List<string> orders = new EATS.StringStream(EATSimported["orders"]).ParseJSONarray();
                 //List<EATS.Order> EATSorders = new List<EATS.Order>();
-                EATS.Server.RootDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-                EATS.BackupManager.Initialize();
                 EATS.OrderManager orderManager = new EATS.OrderManager();
-                
-                orderManager.Import();
-
+                orderManager.ImportOrders(MAS);
 
                 foreach (string travelerJSON in travelers)
                 {
                     Dictionary<string, string> obj = new EATS.StringStream(travelerJSON).ParseJSON();
                     if (obj["type"] == "Table")
                     {
-                        Table table = new Table(obj["itemCode"], Convert.ToInt32(obj["quantity"]));
-                        table.ID = Convert.ToInt32(obj["ID"]);
-                        foreach (string orderNo in new EATS.StringStream(obj["parentOrders"]).ParseJSONarray())
+                        if (obj["state"] == "PreProcess" && obj["station"] != "Start")
                         {
-                            Order order = new Order();
-                            order.SalesOrderNo = orderNo;
-                            order.ItemCode = obj["itemCode"];
-                            table.Orders.Add(order);
+                            Table table = new Table(obj["itemCode"], Convert.ToInt32(obj["quantity"]));
+                            table.ID = Convert.ToInt32(obj["ID"]);
+                            foreach (string orderNo in new EATS.StringStream(obj["parentOrders"]).ParseJSONarray())
+                            {
+                                try
+                                {
+                                    EATS.Order eatsOrder = orderManager.FindOrder(orderNo);
+
+                                    Order order = new Order();
+                                    order.SalesOrderNo = orderNo;
+                                    
+                                    order.ItemCode = obj["itemCode"];
+                                    order.QuantityOrdered = eatsOrder.Items.Find(i => i.ItemCode == order.ItemCode).QtyOrdered;
+                                    order.CustomerNo = eatsOrder.CustomerNo;
+                                    order.ShipDate = eatsOrder.ShipDate;
+                                    order.ShipVia = eatsOrder.ShipVia;
+                                    order.OrderDate = eatsOrder.OrderDate;
+                                    table.Orders.Add(order);
+                                } catch (Exception ex)
+                                {
+
+                                }
+                            }
+                            Travelers.Add(table);
                         }
-                        Travelers.Add(table);
                     }
                 }
             } else

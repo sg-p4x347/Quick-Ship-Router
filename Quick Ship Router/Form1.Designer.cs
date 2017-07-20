@@ -30,6 +30,7 @@
         {
             this.showToday = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.deleteTravelers = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.toTraveler = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
@@ -70,7 +71,7 @@
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.deleteTravelers = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -123,6 +124,20 @@
             this.groupBox1.TabIndex = 6;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Refined Search";
+            // 
+            // deleteTravelers
+            // 
+            this.deleteTravelers.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.deleteTravelers.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(255)))));
+            this.deleteTravelers.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.deleteTravelers.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.deleteTravelers.Location = new System.Drawing.Point(104, 551);
+            this.deleteTravelers.Name = "deleteTravelers";
+            this.deleteTravelers.Size = new System.Drawing.Size(95, 34);
+            this.deleteTravelers.TabIndex = 29;
+            this.deleteTravelers.Text = "Delete";
+            this.deleteTravelers.UseVisualStyleBackColor = false;
+            this.deleteTravelers.Click += new System.EventHandler(this.deleteTravelers_Click);
             // 
             // label3
             // 
@@ -373,6 +388,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.checkBox1);
             this.tabPage1.Controls.Add(this.tableListView);
             this.tabPage1.Location = new System.Drawing.Point(4, 29);
             this.tabPage1.Name = "tabPage1";
@@ -391,9 +407,9 @@
             this.tableListView.CheckBoxes = true;
             this.tableListView.FullRowSelect = true;
             this.tableListView.GridLines = true;
-            this.tableListView.Location = new System.Drawing.Point(6, 6);
+            this.tableListView.Location = new System.Drawing.Point(6, 36);
             this.tableListView.Name = "tableListView";
-            this.tableListView.Size = new System.Drawing.Size(1234, 614);
+            this.tableListView.Size = new System.Drawing.Size(1234, 568);
             this.tableListView.TabIndex = 0;
             this.tableListView.UseCompatibleStateImageBehavior = false;
             // 
@@ -611,19 +627,16 @@
             this.openFileDialog.FileName = "travelers.json";
             this.openFileDialog.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog_FileOk);
             // 
-            // deleteTravelers
+            // checkBox1
             // 
-            this.deleteTravelers.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.deleteTravelers.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(255)))));
-            this.deleteTravelers.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.deleteTravelers.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.deleteTravelers.Location = new System.Drawing.Point(104, 551);
-            this.deleteTravelers.Name = "deleteTravelers";
-            this.deleteTravelers.Size = new System.Drawing.Size(95, 34);
-            this.deleteTravelers.TabIndex = 29;
-            this.deleteTravelers.Text = "Delete";
-            this.deleteTravelers.UseVisualStyleBackColor = false;
-            this.deleteTravelers.Click += new System.EventHandler(this.deleteTravelers_Click);
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(6, 6);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(48, 24);
+            this.checkBox1.TabIndex = 1;
+            this.checkBox1.Text = "All";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
             // Form1
             // 
@@ -647,6 +660,7 @@
             this.groupBox1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.tabPage1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
@@ -702,6 +716,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox fromTraveler;
         private System.Windows.Forms.Button deleteTravelers;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
 

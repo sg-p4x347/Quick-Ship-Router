@@ -42,90 +42,107 @@ namespace Quick_Ship_Router
             //==========================================
             // Remove any orders that have been printed
             //==========================================
-            List<Traveler> travelersToNotDelete = new List<Traveler>();
-            int deletedQty = 0;
-            string line;
-            System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
-            while ((line = file.ReadLine()) != null && line != "")
+            if (mode == Mode.CreateEATS)
             {
-                Traveler printedTraveler = new Traveler(line);
-                switch (mode)
+                string json = File.ReadAllText(specificID);
+                //Dictionary<string, string> EATSimported = new EATS.StringStream(json).ParseJSON();
+                List<string> travelers = new EATS.StringStream(json).ParseJSONarray();
+                //List<string> orders = new EATS.StringStream(EATSimported["orders"]).ParseJSONarray();
+                //List<EATS.Order> EATSorders = new List<EATS.Order>();
+
+
+                foreach (string travelerJSON in travelers)
                 {
-                    case Mode.CreatePrinted:
-                        // just add this traveler to the finished list
-                        if (IsChair(printedTraveler.PartNo))
+                    Dictionary<string, string> obj = new EATS.StringStream(travelerJSON).ParseJSON();
+                    if (obj["state"] == "PreProcess" && obj["station"] != "Start")
+                    {
+                        if (obj["type"] == "Chair")
                         {
-                            Chair chair = new Chair(line);
-                            if (chair.ID >= from && chair.ID <= to)
+                            Chair chair = new Chair(obj["itemCode"], Convert.ToInt32(obj["quantity"]));
+                            chair.ID = Convert.ToInt32(obj["ID"]);
+                            foreach (string orderNo in new EATS.StringStream(obj["parentOrders"]).ParseJSONarray())
                             {
-                                Travelers.Add(chair);
-                                foreach (Order order in chair.Orders)
-                                {
-                                    Order loadedOrder = m_orders.Find(o => o.SalesOrderNo == order.SalesOrderNo);
-                                    if (loadedOrder != null)
-                                    {
-                                        order.ShipDate = loadedOrder.ShipDate;
-                                        order.ShipVia = loadedOrder.ShipVia;
-                                        order.OrderDate = loadedOrder.OrderDate;
-                                        order.ProductLine = loadedOrder.ProductLine;
-                                        order.CustomerNo = loadedOrder.CustomerNo;
-                                    }
-                                }
+                                Order order = new Order();
+                                order.SalesOrderNo = orderNo;
+                                order.ItemCode = obj["itemCode"];
+                                chair.Orders.Add(order);
                             }
-
-                            }
-                        break;
-                    case Mode.DeletePrinted:
-                        //if (IsChair(printedTraveler.PartNo))
-                        //{
-                        //    Chair chair = new Chair(line);
-                        //    if (!(chair.ID >= from && chair.ID <= to)) { travelersToNotDelete.Add(chair); } else { deletedQty++; }
-                        //}
-                        break;
-                    case Mode.CreateSpecific:
-                        if (printedTraveler.ID.ToString("D6") == specificID && IsChair(printedTraveler.PartNo))
-                        {
-                            Travelers.Add(new Chair(line));
-                            break;
+                            Travelers.Add(chair);
                         }
-                        goto default;
-                    default:
-                        // check to see if these orders have been printed already
-                        foreach (Order printedOrder in printedTraveler.Orders)
-                        {
-                            foreach (Order order in m_orders)
-                            {
-                                if (order.SalesOrderNo == printedOrder.SalesOrderNo && order.ItemCode == printedOrder.ItemCode)
-                                {
-                                    // throw this order out
-                                    if (mode != Mode.CreateSpecific)
-                                    {
-                                        m_orders.Remove(order);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        break;
+                    }
                 }
-            }
-            file.Close();
-            // delete the travelers
-            if (mode == Mode.DeletePrinted)
+            } else if (m_checkPrinted || mode == Mode.CreatePrinted || mode == Mode.DeletePrinted)
             {
-                //File.Delete(System.IO.Path.Combine(exeDir, "printed.json"));
-                //System.IO.StreamWriter newFile = File.AppendText(System.IO.Path.Combine(exeDir, "printed.json"));
-                //foreach (Chair traveler in travelersToNotDelete)
-                //{
+                List<Traveler> travelersToNotDelete = new List<Traveler>();
+                int deletedQty = 0;
+                string line;
+                System.IO.StreamReader file = new System.IO.StreamReader(System.IO.Path.Combine(exeDir, "printed.json"));
+                while ((line = file.ReadLine()) != null && line != "")
+                {
+                    Traveler printedTraveler = new Traveler(line);
+                    switch (mode)
+                    {
+                        case Mode.CreatePrinted:
+                            // just add this traveler to the finished list
+                            if (IsChair(printedTraveler.PartNo))
+                            {
+                                Chair chair = new Chair(line);
+                                if (chair.ID >= from && chair.ID <= to)
+                                {
+                                    Travelers.Add(chair);
+                                    foreach (Order order in chair.Orders)
+                                    {
+                                        Order loadedOrder = m_orders.Find(o => o.SalesOrderNo == order.SalesOrderNo);
+                                        if (loadedOrder != null)
+                                        {
+                                            order.ShipDate = loadedOrder.ShipDate;
+                                            order.ShipVia = loadedOrder.ShipVia;
+                                            order.OrderDate = loadedOrder.OrderDate;
+                                            order.ProductLine = loadedOrder.ProductLine;
+                                            order.CustomerNo = loadedOrder.CustomerNo;
+                                        }
+                                    }
+                                }
 
-                    
-                //    newFile.Write(traveler.Export());
-                //}
-                //newFile.Close();
-                //m_infoLabel.Text = "Deleted " + deletedQty + " chair travelers";
+                            }
+                            break;
+                        case Mode.DeletePrinted:
+                            //if (IsChair(printedTraveler.PartNo))
+                            //{
+                            //    Chair chair = new Chair(line);
+                            //    if (!(chair.ID >= from && chair.ID <= to)) { travelersToNotDelete.Add(chair); } else { deletedQty++; }
+                            //}
+                            break;
+                        case Mode.CreateSpecific:
+                            if (printedTraveler.ID.ToString("D6") == specificID && IsChair(printedTraveler.PartNo))
+                            {
+                                Travelers.Add(new Chair(line));
+                                break;
+                            }
+                            goto default;
+                        default:
+                            // check to see if these orders have been printed already
+                            foreach (Order printedOrder in printedTraveler.Orders)
+                            {
+                                foreach (Order order in m_orders)
+                                {
+                                    if (order.SalesOrderNo == printedOrder.SalesOrderNo && order.ItemCode == printedOrder.ItemCode)
+                                    {
+                                        // throw this order out
+                                        if (mode != Mode.CreateSpecific)
+                                        {
+                                            m_orders.Remove(order);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }
+                file.Close();
+
             }
-
-            
             if (mode != Mode.CreateEATS && mode != Mode.CreatePrinted && mode != Mode.DeletePrinted)
             {
                 //==========================================
@@ -449,6 +466,7 @@ namespace Quick_Ship_Router
         //=======================
         private ListView m_chairListView = null;
         private Label m_infoLabel = null;
+        private bool m_checkPrinted = true;
         private ProgressBar m_progressBar = null;
         private List<Order> m_orders = new List<Order>();
         private List<Chair> m_travelers = new List<Chair>();

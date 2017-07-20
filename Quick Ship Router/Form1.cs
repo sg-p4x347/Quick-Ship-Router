@@ -141,8 +141,8 @@ namespace Quick_Ship_Router
 
                 }
                 // Create travelers
-                tableManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : cp.specificID,fromTraveler.Text, toTraveler.Text);
-                chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : specificOrder.Text, fromTraveler.Text,toTraveler.Text);
+                //tableManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : cp.specificID,fromTraveler.Text, toTraveler.Text);
+                chairManager.CompileTravelers(backgroundWorker1, cp.mode, travelerID > 0 ? travelerID.ToString("D6") : cp.specificID, fromTraveler.Text,toTraveler.Text);
                 travelerUnraveler.CreateTravelers();
                 return true;
             }
@@ -378,6 +378,10 @@ namespace Quick_Ship_Router
             {
                 chairManager.PrintTravelers(worksheets);
             }
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(worksheets);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(workbook);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(workbooks);
+
         }
         // Print summary
         private void btnPrintSummary_Click(object sender, EventArgs e)
@@ -543,6 +547,15 @@ namespace Quick_Ship_Router
         {
             if (clearBefore.Checked) Clear();
             backgroundWorker1.RunWorkerAsync(new CreationParams(Mode.DeletePrinted, ""));
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in tableListView.Items)
+            {
+                item.Checked = checkBox1.Checked;
+            }
+                
         }
     }
 }

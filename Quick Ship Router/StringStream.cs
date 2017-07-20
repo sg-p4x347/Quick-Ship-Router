@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Efficient_Automatic_Traveler_System
+namespace EATS
 {
     class StringStream
     {

@@ -84,10 +84,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BackupManager.cs" />
     <Compile Include="Bill.cs" />
     <Compile Include="BlacklistItem.cs" />
     <Compile Include="Chair.cs" />
     <Compile Include="ChairManager.cs" />
+    <Compile Include="EatsOrder.cs" />
+    <Compile Include="EatsOrderItem.cs" />
+    <Compile Include="EatsOrderManager.cs" />
+    <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
